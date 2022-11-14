@@ -6,8 +6,8 @@ export default function UIFilePicker(props) {
 
     return (
         <>
-            <input type="file" id="file" {...props} hidden />
-            <Button color="primary" auto onPress={() => document.querySelector("#file").click()} >
+            <input type="file" name="document" id="document" {...props} hidden />
+            <Button color="primary" auto onPress={() => document.querySelector("#document").click()} >
                 {
                     title ? title : "Seleccionar Documentos"
                 }

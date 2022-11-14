@@ -1,6 +1,27 @@
-import { Navbar, Text, Button, Link } from "@nextui-org/react";
+import { useState, useEffect } from 'react';
+import { Navbar, Text, Link, Button } from "@nextui-org/react";
+import auth from '../libs/auth';
 
 export default function Header() {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const unsubscriber = () => auth.instance.authStateChange().then((user) => {
+            setUser(user);
+        });
+
+        return unsubscriber;
+    });
+
+    const signin = () => {
+        auth.signInWithGoogle()
+            .then((res) => {
+                console.log(res);
+            }).catch((err) => {
+                console.log(err);
+            })
+    }
+
     return (
         <Navbar variant="sticky">
             <Navbar.Brand>
@@ -15,9 +36,17 @@ export default function Header() {
                 <Navbar.Link href="/create">Crear mi Legajo</Navbar.Link>
             </Navbar.Content>
             <Navbar.Content>
-                <Navbar.Link color="inherit" href="/">
-                    Inicio   
-                </Navbar.Link>
+            {
+                user? (
+                    <Navbar.Link color="primary" href="/profile">
+                        {user.displayName}
+                    </Navbar.Link>    
+                ) : (
+                    <Button light onPress={() => signin()}>
+                        Ingresar con Google
+                    </Button>
+                )
+            }
                 <Navbar.Link color="inherit" href="/config">
                     Configuración
                 </Navbar.Link>

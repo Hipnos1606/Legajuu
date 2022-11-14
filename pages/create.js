@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Text, Col, Row, Input, Spacer, Button } from '@nextui-org/react';
 import Layout from '../components/Layout'
 import DocumentsList from '../components/DocumentsList';
 import { Dropdown, FilePicker } from '../components/UI';
+import auth from '../libs/auth';
+import Directory from '../libs/directory';
+import store from '../libs/store';
 
 const legajoDefaultDirectories = [
     {
@@ -15,48 +18,91 @@ const legajoDefaultDirectories = [
     }
 ];
 
-export default function Create ({ legajoDirectories = legajoDefaultDirectories }) {
+export default function Create () {
+    
+    const [user, setUser] = useState(auth.currentUser);
 
-    const [myLegajo, setMyLegajo] = useState({});
+    const [documentsToUpload, setDocumentsToUpload] = useState([]);
 
-    const [directoryName, setDirectoryName] = useState("");
+    const [directories, setDirectories] = useState([]);
 
-    const [filesURL, setFilesURL] = useState([]);
+    useEffect(() => {
+        auth.instance.authStateChange().then(async (user) => {
 
-    const handleGetFilesURL = (event) => {
+            setUser(user);
 
-        const files = [...event.target.files];
+            if (user) {
 
-        const filesURL = files.map((file) => URL.createObjectURL(file));
+                const querySnapshot = await store.getDirectories();
 
-        setFilesURL(filesURL);
+                let storedDirectories = [];
+
+                querySnapshot.forEach((doc) => {
+
+                    const directory = {
+
+                        name: doc.id,
+
+                        documents: doc.data().documents,
+
+                    }
+                    
+                    storedDirectories.push(directory);
+                });
+
+                setDirectories(storedDirectories);
+            }
+        });
+    }, []);
+
+
+    let directoryNameRef = useRef();
+    const directoryName = () => directoryNameRef.current.value;
+
+    const handleGetFiles = (event) => {
+        let { files } = event.target;
+        setDocumentsToUpload(files);
+    }
+
+    const handleSetDirectoryName = (text) => {
+        directoryNameRef.current.focus();
+        directoryNameRef.current.value = text;
 
     }
 
-    const handleSetDirectoryName = (event) => {
+    const handleSetDirectory = () => {
 
-        if (typeof event === "string") {
-            setDirectoryName(event);
-            return;
-        }
-        const value = event.target.value;
-        setDirectoryName(value);
-    }
+        const name = directoryName().trim().toUpperCase();
 
-    const handleSaveDirectory = () => {
-        if (directoryName.trim() === '') {
+        if (name === "") {
+
             alert("No has puesto un nombre al directorio");
+
             return;
+
         }
 
-        const myNewLegajo = {
-            ...myLegajo,
-            [directoryName]: filesURL,
-        };
+        const directoryExist = directories.find((directory) => directory.name === name);
+        
+        if (!directoryExist) {
 
-        setMyLegajo(myNewLegajo);
-        setFilesURL([]);
-        setDirectoryName("");
+            const newDirectory = new Directory();
+
+            newDirectory.setDocuments(documentsToUpload);
+            newDirectory.setName(name);
+                newDirectory.save().then(() => {
+                
+                setDirectories([...directories, newDirectory.toJSON()]);
+
+                setDocumentsToUpload([]);
+
+                handleSetDirectoryName('');
+
+            }).catch((err) => {
+                console.log(err);
+            });
+        }
+
     }
 
     return (
@@ -67,47 +113,36 @@ export default function Create ({ legajoDirectories = legajoDefaultDirectories }
                         <Text h1>Crea tu Legajo</Text>
                     </Row>
                     <Row>
-                        <FilePicker accept="application/pdf" multiple onChange={handleGetFilesURL} />
+                        <FilePicker accept="application/pdf" title={"Selecciona los documentos"} multiple onChange={handleGetFiles} />
                     </Row>
                     <Spacer y={2} />
                     <Row>
-                        <Input labelPlaceholder="Nombra el directorio" value={directoryName} onChange={handleSetDirectoryName} />
+                        <Input labelPlaceholder="Nombra el directorio" ref={directoryNameRef} />
                         <Spacer x={1} />
-                        <Dropdown title="O selecciona uno prestablecidos" items={legajoDirectories} onChange={handleSetDirectoryName} />
+                        <Dropdown title="O selecciona uno prestablecidos" items={legajoDefaultDirectories} onChange={handleSetDirectoryName} />
+                        <Spacer x={1} />
+                        {
+                            documentsToUpload.length > 0 &&
+                                <Button color="success" onPress={handleSetDirectory}>Guardar Directorio</Button>
+                        }
                     </Row>
-                    <DocumentsList documentsURL={filesURL} />
+                    <DocumentsList documents={ [...documentsToUpload].map((document) => ({ name: document.name, url: URL.createObjectURL(document) })) } />
                     <Spacer y={2} />
-                    <Button color="success" disabled={ filesURL.length < 1 || directoryName.trim() === "" } onPress={handleSaveDirectory}>Guardar Directorio</Button>
+                    <Button color="success" disabled={ documentsToUpload.length < 1} onPress={handleSetDirectory}>Guardar Directorio</Button>
                     <Spacer y={2} />
                 </Col>
             </Row>
             <Col>
                 {
-                    Object.keys(myLegajo).map((directory) => {
-                        const directoryFilesURL = myLegajo[directory] || [];
+                    directories.map((directory) => {
                         return (
-                            <Col>
-                                <Text h3>{directory.toUpperCase()}</Text>
-                                <DocumentsPreview documentsURL={directoryFilesURL} />
+                            <Col key={JSON.stringify(directory)}>
+                                <Text h3>{directory.name}</Text>
+                                <DocumentsList documents={directory.documents} />
                             </Col>
                         )
                     })
                 }
-                <Spacer y={2} />
-                {
-                    Object.keys(myLegajo).length > 0 && (
-                        <Row>
-                            <Button color="secondary">
-                                Guardar Legajo
-                            </Button>
-                            <Spacer y={2} />
-                            <Button flat auto>
-                                Descargar Legajo como PDF
-                            </Button>
-                        </Row>
-                    )
-                }
-                <Spacer y={2} />
             </Col>
         </Layout>
     )

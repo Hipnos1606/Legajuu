@@ -9,7 +9,7 @@ export default function UIDropdown({ title, items, onChange} ) {
                 {
                     items.map((item) => (
                             <Dropdown.Item key={item.key} color={item.color} >
-                                <Button onClick={() => onChange(item.title)} light>
+                                <Button onPress={() => onChange(item.title)} light>
                                     {item.title}
                                 </Button>
                             </Dropdown.Item>

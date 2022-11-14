@@ -1,22 +1,17 @@
-import { Grid, Card } from '@nextui-org/react'
+import { Grid } from '@nextui-org/react'
+import DocumentCard from './DocumentCard'
 
-export default function DocumentsList ({ documentsURL=[] }) {
+export default function DocumentsList (props) {
+
+    const { documents = [] } = props;
+    
     return (
         <Grid.Container gap={3}>
             {
-                documentsURL.map((documentURL) => (
-                    <Grid xs={4}>
-                        <Card css={{ p: 0 }}>
-                            <iframe frameBorder={0} scrolling="no" width="100%" height="200" src={documentURL}></iframe>
-                        </Card>
-                    </Grid>
+                documents.map((document) => (
+                    <DocumentCard document={document} gridNum={4} />
                 ))
             }
-            <style jsx>{`
-                iframe {
-                    border: 0
-                }
-            `}</style>
         </Grid.Container>
     )
 }

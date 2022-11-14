@@ -1,9 +1,20 @@
 import { Component } from 'react';
 import Head from 'next/head';
-import { Container } from "@nextui-org/react";
+import { Container, Card, Loading } from "@nextui-org/react";
 import Header from '../components/Header';
+import auth from '../libs/auth';
 
 class Layout extends Component {
+
+    state = {
+        user: null,
+        loading: true,
+    }
+
+    componentDidMount() {
+        auth.instance.authStateChange().then((user) => this.setState({loading: false, user,}));
+    }
+
     render() {
 
         const { 
@@ -29,7 +40,20 @@ class Layout extends Component {
                 <Container css={containerCss}>
                     <main>
                         {
-                            children
+                            this.state.loading ? (
+                                <Card css={{ 
+                                    mw: '100px', 
+                                    minHeight: '100px', 
+                                    ai: 'center', 
+                                    jc: 'center', 
+                                    ml: '50%', 
+                                    mt: '10%',
+                                    transform: 'translateX(-50%) translateY(-50%)',
+                                }}>
+                                    <Loading />
+                                </Card>
+                            )
+                            : children
                         }
                     </main>
                 </Container>

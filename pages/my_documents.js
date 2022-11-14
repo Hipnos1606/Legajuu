@@ -1,55 +1,70 @@
 import { useState } from 'react';
-import { Text, Col, Row, Input, Spacer, Button, Card } from '@nextui-org/react';
-import Layout from '../components/Layout'
+import { Text, Col, Row, Spacer, Grid, Button } from '@nextui-org/react';
+import Layout from '../components/Layout';
+import DocumentsList from '../components/DocumentsList';
+import http from '../libs/http';
 import { FilePicker } from '../components/UI';
 
-export default function MyDocuments () {
+export default function MyDocuments ({ allDocuments }) {
 
-    const [files, setFiles] = useState([]);
-    const [file, setFile] = useState({ data: null, name: "" });
+    const [uploadDocuments, setUploadDocuments] = useState([]);
 
     const handleGetFile = (event) => {
-        const fileToProcess = event.target.files[0];
 
-        const newFile = {
-            ...file,
-            data: fileToProcess,
-        }
+        const selectedDocuments = [...event.target.files];
 
-        setFile(newFile);
+        setUploadDocuments(selectedDocuments);
+
     }
 
     return (
-        <Layout headTitle="Edita tu Legajo">
-            <Row>
-                <Col>
-                    <Row>
-                        <Text h1>Sube tus Documentos</Text>
-                    </Row>
-                    <Row>
-                        <Col>
-                            <FilePicker accept="application/pdf" title={file.data ? "Elegir otro documento" : "Selecciona un documento"} multiple onChange={handleGetFile} />
-                            <Spacer y={2} />
-                            {
-                                file.data && <Input labelPlaceholder="Nombre del documento" value={file.name} />
-                            }
-                            <Spacer y={1} />
-                            {
-                                file.data && (
-                                    <Card>
-                                        <iframe src={URL.createObjectURL(file.data)} width="100%" frameBorder={0} height="400px" />
-                                    </Card>
-                                )
-                            }
-                        </Col>
-                    </Row>
-                    <Spacer y={2} />
+        <Layout headTitle="Gestiona tus documentos">
+            <form action={http.instance.baseURL + "documents/upload"}  encType="multipart/form-data" method='POST'>
+                <Row>
+                    <Col>
+                        <Row>
+                            <Text h1>Sube y gestiona tus Documentos</Text>
+                        </Row>
+                        <Row>
+                            <Col>
+                                <Row>
+                                    <FilePicker accept="application/pdf" title={uploadDocuments ? "Elegir otros documento" : "Selecciona un documento"} multiple onChange={handleGetFile} />
+                                </Row>
+                                <Spacer y={1} />
+                                {
+                                    uploadDocuments.length > 0 && (
+                                        <Row align='center' >
+                                            <Button auto color="success" type='submit' >Guardar Documento</Button> 
+                                        </Row>)
+                                }
+                            </Col>
+                        </Row>
+                    </Col>
+                </Row>
+                <Grid.Container gap={2}>
                     {
-                        file.data && <Button color="success" onPress={() => {}}>Guardar Documento</Button>
+                        <DocumentsList documents={uploadDocuments} />
                     }
-                    <Spacer y={2} />
-                </Col>
-            </Row>
+                </Grid.Container>
+                <Spacer y={1} />
+                                {
+                                    uploadDocuments.length > 0 && (
+                                        <Row align='center' >
+                                            <Button auto type='submit' color="success" >Guardar Documento</Button> 
+                                        </Row>)
+                                }
+                <Spacer y={1} />
+                
+                    
+            </form>
         </Layout>
     )
+}
+
+export async function getServerSideProps(context) {
+
+    return {
+        props: {
+        }
+    };
 }
