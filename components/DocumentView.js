@@ -4,8 +4,6 @@ import { useState } from 'react';
 export default function DocumentView ({ src }) {
     const [loading, setLoading] = useState(true);
 
-    console.log('documentView src', src);
-
     return (
         <Card>
             {
@@ -18,7 +16,7 @@ export default function DocumentView ({ src }) {
                         />
                 ) 
             }
-            <iframe 
+            <embed 
                 src={src} 
                 css={{ display: loading ? "none" : "inline-flex" }}
                 width="100%" 

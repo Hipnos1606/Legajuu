@@ -2,7 +2,7 @@ import {
     getAuth, 
     signInWithPopup, 
     GoogleAuthProvider,
-    onAuthStateChanged
+    onAuthStateChanged,
 } from 'firebase/auth';
 import Storage from './storage';
 
@@ -11,7 +11,14 @@ class Auth {
     static instance = new Auth();
     
     currentUser() {
-        return getAuth().currentUser;
+        let user = Storage.instance.getUser();
+
+        if (!user) {
+            user = getAuth().currentUser;
+            
+            Storage.instance.setUser(user);
+        }
+        return user;
     }
 
     async signInWithGoogle () {
@@ -21,7 +28,6 @@ class Auth {
             throw new Error(err);
         }
     }
-
 
     async authStateChange() {
         try {
@@ -40,6 +46,11 @@ class Auth {
 
         }
 
+    }
+
+    signOut() {
+        getAuth().signOut();
+        location.reload();
     }
 }
 

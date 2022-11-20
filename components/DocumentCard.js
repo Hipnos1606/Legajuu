@@ -16,7 +16,7 @@ const DocumentCard = (props) => {
                             auto
                             flat
                             icon={<IoIosTrash size={32} />}
-                            onPress={deleteAction} 
+                            onPress={() => deleteAction(document)} 
                             />
                     </Row>
                 </Card.Header>

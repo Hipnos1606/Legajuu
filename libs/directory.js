@@ -1,29 +1,22 @@
-import http from '../libs/http';
 import auth from '../libs/auth';
 import store from '../libs/store';
-
-const saveDocumentURL = 'documents/upload';
+import RemoteStorage from '../libs/remoteStorage';
+import Storage from '../libs/storage';
 
 export default class Directory {
 
     constructor() {
         this.name = "";
         this.documents = [];
-        this.formattedDocuments = [];
     }
 
     setName(name) {
-        this.name = name;
+        this.name = name.toUpperCase();
     }
 
     setDocuments(documents) {
-        this.documents = [...documents];
-        this.formattedDocuments = [...documents].map((document) => this.formatDocument(document));
-    }
-
-    setFormatedDocuments(documents) {
+        documents = [...documents];
         this.documents = documents;
-        this.formattedDocuments = documents;
     }
 
     toJSON() {
@@ -41,82 +34,88 @@ export default class Directory {
         });
     }
 
-    async storeDocument(document)  {
-        try {
-            const body = new FormData();
-            body.append('userId', auth.instance.user.uid);
-            body.append('directory', this.name);
-            body.append('document', document);
-
-            return await http.instance.post(saveDocumentURL, {
-                method: 'POST',
-                body,
-            });
-
-        } catch (err) {
-            throw new Error(err);
-        }
-
+    getFormattedDocuments() {
+        return this.documents.map((document) =>  this.formatDocument(document));
     }
 
-    async storeDocuments(documents) {
+    async saveDocumentsInStorage(documents) {
         try {
-
-            const promises = documents.map(async (document) => {
-
-                await this.storeDocument(document);
-
-                return ({
-                    name: document.name,
-                    size: document.size,
-                    url: `${http.instance.baseURL}documents/${auth.instance.user.uid}/${this.name}/${document.name}`,
-                });
-                
-            });
-
-            return await Promise.all(promises);
+            
+            return await RemoteStorage.instance.uploadMultiples(documents);
 
         } catch (err) {
 
-            throw new Error(err);
+            console.error("Directory saveDocumentsInStorage", err);
+            
+            return false;
 
         }
     }
 
-    async saveDocuments(documents) {
+    async saveDocumentsInDB(documents) {
         try {
-            return await store.saveDirectory({
+
+            await store.saveDirectory({
                 name: this.name,
                 documents: documents,
             });
+
         } catch (err) {
 
-            throw new Error(err);
+            console.error("Directory saveDocumentsInDB", err);
+
+            return false;
 
         }
+    }
+
+    nameIsEmpty() {
+        return this.name.trim() === "";
     }
 
     async save() {
         try {
 
-            if (auth.currentUser()) {
-                const storedDocuments = await this.storeDocuments([...this.documents]);
-                console.log('documents saved in storage');
+            if (this.nameIsEmpty()) {
 
-                await this.saveDocuments(storedDocuments);
-                console.log('documents saved in store');
-
-                return storedDocuments;
+                alert("Por favor dale un nombre al directorio.");
 
             } else {
+                if (auth.instance.currentUser()) {
+    
+                    const storedDocuments = await this.saveDocumentsInStorage(this.documents);
+    
+                    return await this.saveDocumentsInDB(storedDocuments);
+    
+                } else {
 
-                return [...this.documents];
-
+                    Storage.instance.saveMultiple(this.documents);
+                    
+                }
             }
+
+
         } catch (err) {
+            
+            console.error("Directory save error", err);
 
-            throw new Error("Directory class save error: " + err);
+            return false;
 
+        }
+    }
+
+    static async deleteDoc(document) { 
+        try {
+
+            await RemoteStorage.instance.deleteDocument(document);
+
+            await store.deleteDoc(document);
+
+        } catch(err) {
+
+            console.error(err);
+            
+            return false;
         }
     }
 

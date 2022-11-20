@@ -2,69 +2,85 @@ import { useState, useRef, useEffect } from 'react';
 import { Text, Col, Row, Input, Spacer, Button } from '@nextui-org/react';
 import Layout from '../components/Layout'
 import DocumentsList from '../components/DocumentsList';
-import { Dropdown, FilePicker } from '../components/UI';
+import { Dropdown, FilePicker, LoadingScreen } from '../components/UI';
 import auth from '../libs/auth';
 import Directory from '../libs/directory';
 import store from '../libs/store';
 
-const legajoDefaultDirectories = [
-    {
-        key: "títulos",
-        title: "Títulos",
-    },
-    {
-        key: "documentos_personales",
-        title: "Documentos Personales",
-    }
-];
+const defaultDirectories = ["TÍTULOS", "DOCUMENTOS PERSONALES", "ANTECEDENTES PENALES", "ACUERDO DE NOMBRAMIENTO"];
 
 export default function Create () {
-    
-    const [user, setUser] = useState(auth.currentUser);
 
-    const [documentsToUpload, setDocumentsToUpload] = useState([]);
+    const [selectedDocuments, setSelectedDocuments] = useState([]);
+    
+    const [files, setFiles] = useState([]);
 
     const [directories, setDirectories] = useState([]);
 
+    const [loading, setLoading] = useState(true);
+
+    const [legajoDefaultDirectories, setLegajoDefaultDirectories] = useState(defaultDirectories);
+
+    const orderStoredDirectories = (storedDirectories) => {
+
+        let newLegajoDefaultDirectories = new Set([...storedDirectories.map((directory) => directory.name), ...defaultDirectories]);
+
+        setLegajoDefaultDirectories([...newLegajoDefaultDirectories]);
+
+        const newStoredDirectories = storedDirectories.filter((directory) => directory.documents.length > 0);
+
+        return newStoredDirectories;
+
+    }
+
+    const handleGetDirectories = async () => {
+
+        let storedDirectories = await store.getDirectories();
+
+        let orderedDirectories = orderStoredDirectories(storedDirectories);
+
+        setDirectories(orderedDirectories);
+
+        setFiles([]);
+
+        handleSetDirectoryName("");
+
+        setLoading(false);
+
+    }
+
     useEffect(() => {
+
         auth.instance.authStateChange().then(async (user) => {
 
-            setUser(user);
+            console.log(user);
 
             if (user) {
 
-                const querySnapshot = await store.getDirectories();
-
-                let storedDirectories = [];
-
-                querySnapshot.forEach((doc) => {
-
-                    const directory = {
-
-                        name: doc.id,
-
-                        documents: doc.data().documents,
-
-                    }
-                    
-                    storedDirectories.push(directory);
-                });
-
-                setDirectories(storedDirectories);
+                handleGetDirectories();
+                
             }
+
+                setLoading(false);
+            
         });
     }, []);
 
 
     let directoryNameRef = useRef();
-    const directoryName = () => directoryNameRef.current.value;
 
     const handleGetFiles = (event) => {
+
         let { files } = event.target;
-        setDocumentsToUpload(files);
+        let directory = new Directory();
+        directory.setDocuments(files);
+        setFiles([...files]);
+        setSelectedDocuments(directory.getFormattedDocuments());
+        directory = null;
     }
 
     const handleSetDirectoryName = (text) => {
+
         directoryNameRef.current.focus();
         directoryNameRef.current.value = text;
 
@@ -72,41 +88,58 @@ export default function Create () {
 
     const handleSetDirectory = () => {
 
-        const name = directoryName().trim().toUpperCase();
+        setLoading(true);
 
-        if (name === "") {
+        let directory = new Directory();
 
-            alert("No has puesto un nombre al directorio");
+        directory.setName(directoryNameRef.current.value);
 
-            return;
+        directory.setDocuments(files);
 
-        }
+        directory.save().then(async () => {
 
-        const directoryExist = directories.find((directory) => directory.name === name);
-        
-        if (!directoryExist) {
+            handleGetDirectories();
 
-            const newDirectory = new Directory();
+            setSelectedDocuments([]);
 
-            newDirectory.setDocuments(documentsToUpload);
-            newDirectory.setName(name);
-                newDirectory.save().then(() => {
+        });
+
+        directory = null;
+    }
+
+    const deleteDoc = {
+        fromStore: (document) => {
+            setLoading(true);
+            Directory.deleteDoc(document).then(async () => {
+
+                const storedDirectories = await store.getDirectories();
+
+                setDirectories(orderStoredDirectories(storedDirectories));
+
+                setLoading(false);
                 
-                setDirectories([...directories, newDirectory.toJSON()]);
-
-                setDocumentsToUpload([]);
-
-                handleSetDirectoryName('');
-
-            }).catch((err) => {
-                console.log(err);
             });
-        }
+            
+        },
+        fromUpload: (document) => {
 
+            const modifiedDocuments = selectedDocuments.filter((uploadDoc) => {
+
+                const documentToDelete = JSON.stringify(document);
+                const actualUploadDoc = JSON.stringify(uploadDoc);
+                return documentToDelete !== actualUploadDoc;
+
+            });
+
+            setSelectedDocuments(modifiedDocuments);
+
+        },
+        
     }
 
     return (
         <Layout headTitle="Edita tu Legajo">
+        <LoadingScreen visible={loading} />
             <Row>
                 <Col>
                     <Row>
@@ -117,18 +150,22 @@ export default function Create () {
                     </Row>
                     <Spacer y={2} />
                     <Row>
-                        <Input labelPlaceholder="Nombra el directorio" ref={directoryNameRef} />
+                        <Dropdown title="Selecciona un directorio" items={legajoDefaultDirectories} onChange={handleSetDirectoryName} />
                         <Spacer x={1} />
-                        <Dropdown title="O selecciona uno prestablecidos" items={legajoDefaultDirectories} onChange={handleSetDirectoryName} />
+                        <Input labelPlaceholder="o crea uno nuevo" ref={directoryNameRef} />
                         <Spacer x={1} />
                         {
-                            documentsToUpload.length > 0 &&
+                            selectedDocuments.length > 0 &&
                                 <Button color="success" onPress={handleSetDirectory}>Guardar Directorio</Button>
                         }
+                        <Spacer x={1} />
+                        <Button color="primary" onPress={() => { setLoading(true); handleGetDirectories();}}>Actualizar</Button>
                     </Row>
-                    <DocumentsList documents={ [...documentsToUpload].map((document) => ({ name: document.name, url: URL.createObjectURL(document) })) } />
+                    <DocumentsList documents={ selectedDocuments } deleteAction={deleteDoc.fromUpload} />
                     <Spacer y={2} />
-                    <Button color="success" disabled={ documentsToUpload.length < 1} onPress={handleSetDirectory}>Guardar Directorio</Button>
+                    {
+                        selectedDocuments.length > 0 && <Button color="success" disabled={ selectedDocuments.length < 1} onPress={handleSetDirectory}>Guardar Directorio</Button>
+                    }
                     <Spacer y={2} />
                 </Col>
             </Row>
@@ -138,7 +175,7 @@ export default function Create () {
                         return (
                             <Col key={JSON.stringify(directory)}>
                                 <Text h3>{directory.name}</Text>
-                                <DocumentsList documents={directory.documents} />
+                                <DocumentsList documents={directory.documents} deleteAction={deleteDoc.fromStore} />
                             </Col>
                         )
                     })

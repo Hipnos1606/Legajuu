@@ -1,3 +1,5 @@
+import { getLocalTimeZone } from "@internationalized/date";
+
 class Storage {
 
     static instance = new Storage();
@@ -17,123 +19,105 @@ class Storage {
         }
     }
 
-    async getUser() {
+    getUser() {
+
+        const storedUser = localStorage.getItem('legajuu-user');
+
+        return JSON.parse(storedUser);
+    }
+
+    saveDocument(document) {
         try {
 
-            const storedUser = localStorage.getItem('legajuu-user');
-
-            return JSON.parse(storedUser);
-
-        } catch(err) {
+            const stringifiedDocument = JSON.stringify(document);
             
-            console.error(err);
+            const documentkey = Date.now();
 
-            throw new Error(err);
-        }
-    }
-
-    async setDocument(item) {
-        try {
-
-            const key = `legajuu-document-${item.id}`;
-
-            localStorage.setItem(key, JSON.stringify(item));
-
-            return true;
-
-        } catch(err) {
-
-            console.error("Storage setDocument error ", err);
-
-            return false;
-
-        }
-    }
-
-    async getDocument(key) {
-        try {
-
-            const storedItem = localStorage.getItem(key);
-
-            return JSON.parse(storedItem);
-
-        } catch(err) {
-
-            console.error("Storage getDocument error", err);
-
-            throw Error(err);
-
-        }
-    }
-
-    async setDirectory(directoryName) {
-        try {
-
-            localStorage.setItem("legajoo-directory-" + directoryName);
-
-            return true;
+            localStorage.setItem(`legajuu-document-${documentkey}`, stringifiedDocument);
 
         } catch (err) {
 
-            console.error(err);
-
-            return false;
+            console.error("Storage saveDocument error", err);
 
         }
     }
 
-    async getAll() {
-        try {
+    saveDirectory(directory) {
 
-            const keys = Object.keys(localStorage);
+        localStorage.setItem(`legajuu-directory-${Date.now()}`, JSON.stringify(directory.name));
 
-            const legajooKeys = keys.filter((key) => key.includes("legajoo"));
+        directory.documents.forEach((document) => {
 
-            return legajooKeys;
+            document = {
+                name: document.name,
+                url: document.url || URL.createObjectURL(document),
+                directory: directory.name,
+            };
 
-        } catch (err) {
+            this.saveDocument(document);
+
+        });
+
+    }
+
+    getDirectories() {
+
+        const keys = Object.keys(localStorage);
+        
+        let directoriesKeys = keys.filter((key) => key.includes("legajuu-directory"));
+        const documentsKeys = keys.filter((key) => key.includes("legajuu-document"));
+
+        const allDocuments = documentsKeys.map((documentKey) => this.getItem(documentKey));
+
+        let directories = directoriesKeys.map((directoryKey) => this.getItem(directoryKey));
+
+        directories = directories.map((directory) => {
             
-            console.error("Storage getAll error", err);
+            const directoryDocuments = allDocuments.filter((document) =>  document.directory === directory);
 
-            throw Error(err);
+            return {
+                directory: directory,
+                documents: directoryDocuments,
+            }
+        });
 
-        }
+        return directories;
+
     }
 
-    async getAllDocuments() {
-        try {
+    getItem(key) {
 
-            const keys = await this.getAll();
+        return JSON.parse(key);
 
-            const documentsKeys = keys.filter((key) => key.includes("document"));
-
-            var documents = [];
-
-            documentsKeys.forEach(async (key) => {
-
-                const document = await this.getDocument(key);
-
-                documents.concat(document);
-
-            });
-
-            return documents;
-
-        } catch(err) {
-
-            console.error("Storage getAllDocuments", err);
-
-            throw Error(err);
-
-        }
     }
 
-    async remove(key) {
-        try {
-            localStorage.removeItem(key);
-        } catch (err) {
-            return false;
+    getAll() {
+
+        const keys = Object.keys(localStorage);
+
+        return keys.map((key) => {
+
+            return getItem(key);
+
+        });
+
+    }
+
+    removeDocument(document) {
+        const keys = Object.keys(localStorage);
+
+        let documentToDelete = keys.find((key) => {
+
+            const storedDocument = this.getItem(key);
+
+            return JSON.stringify(storedDocument) === JSON.stringify(document);
+
+        });
+
+        if (documentToDelete.length > 0) {
+            localStorage.removeItem(documentToDelete);
         }
+
     }
 
 }

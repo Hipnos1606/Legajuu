@@ -1,70 +1,141 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, setDoc, doc, getDocs } from 'firebase/firestore';
+import { getFirestore, setDoc, doc, getDoc, getDocs, collection, query, where, deleteDoc } from 'firebase/firestore';
 import config from '../res/firebase/config';
 import auth from './auth';
 
 const app = initializeApp(config);
 const db = getFirestore(app);
 
-// firestore refs
-
-const userRef = () => doc(db, 'user', auth.instance.currentUser().uid);
-
-const legajoRef = () => doc(this.userRef, 'legajo');
-
-const documentsRef = () => doc(this.userRef, 'documents');
-
-//
-
 export default class Store {
 
+    static async saveDocument(docName, data) {
+        try {
+            
+            const docRef = doc(db, 'users', auth.instance.currentUser().uid, `documents/${docName}`);
+    
+            return await setDoc(docRef, data, { merge: true });
 
-    static async saveMultiple(directory, urls) {
+        } catch (err) {
 
-        const allPromises = Promise.all(urls.map(async (url, index) => {
-
-            const document = directory.documents[index];
-
-            const docRef = doc('users', auth.currentUser().uid, directory.name);
-
-            return await setDoc(docRef, {
-
-                ...document,
-
-                url,
-                directories: {
-                    [directory.name]: true,
-                }
-
-            }, { merge: true });
-
-        }));
-
-        return await allPromises;
+            console.error("Store saveDocument error ", err);
+        }
+        
     }
+
+    static async saveMultiple(directory) {
+        try {
+            
+            const allPromises = Promise.all(directory.documents.map(async (document) => {
+
+                await this.saveDocument(document.name, {
+                    ...document,
+                    directory: directory.name,
+                });
+
+            }));
+
+            await allPromises;
+
+            return true;
+
+        } catch(err) {
+
+            console.error(err);
+
+        }
+    }
+
 
     static async saveDirectory(directory) {
         try {
 
-            await setDoc(doc('users', auth.currentUser().uid), 'legajo', {
-                [directory.name] : true,
-            })
+            await setDoc(doc(db, 'users', auth.instance.currentUser().uid), {
+                directories: {
+                    [directory.name]: true,
+                },
+            }, { merge: true });
 
-            FbStorage.instance.uploadMultiples(directory.documents).then(async (urls) => {
-
-                await this.saveMultiple(directory, urls);
-
-            });
+            await this.saveMultiple(directory);
 
             return true;
 
         } catch(e) {
-            console.log(e);
-            throw new Error(e);
+
+            console.error("Store SaveDirectory error", e);
+
+        }
+    }
+
+    static async getDocumentsFrom(directory) {
+        try {
+
+            const q = query(collection(db, 'users', auth.instance.currentUser().uid, "documents"), where("directory", "==", directory));
+
+            const querySnapshot = await getDocs(q);
+
+            let documents = querySnapshot.docs.map((doc) => doc.data());
+
+            return documents;
+
+        } catch(err) {
+
+            console.error(err);
+
         }
     }
 
     static async getDirectories() {
-        return await getDocs(collection(db, 'users', auth.currentUser().uid, 'directories'));
+        try {
+            
+            const docRef = doc(db, 'users', auth.instance.currentUser().uid);
+            
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                let directories = docSnap.data().directories;
+
+                const allPromises = Promise.all(Object.keys(directories).map(async (directory) => {
+
+                    return ({
+                        name: directory,
+                        documents: await this.getDocumentsFrom(directory),
+                    });
+                }));
+
+                directories = await allPromises;
+                
+                return directories;
+
+            } else {
+
+                console.error("documento no existe");
+
+                return [];
+
+            }
+        } catch(e) {
+
+            console.error('store getDirectories error', e);
+
+        }
+    }
+
+    static async deleteDoc(document) {
+        try {
+
+            const docRef = doc(db, 'users', auth.instance.currentUser().uid, 'documents', document.name);
+
+            await deleteDoc(docRef);
+
+            return true;
+
+
+        } catch(err) {
+            
+            console.error(err);
+
+            return false;
+
+        }
     }
 }

@@ -1,25 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Navbar, Text, Link, Button } from "@nextui-org/react";
+import { useContext } from 'react';
+import { UserContext } from './context/userContext';
+import { Navbar, Text, Link } from "@nextui-org/react";
 import auth from '../libs/auth';
 
 export default function Header() {
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-        const unsubscriber = () => auth.instance.authStateChange().then((user) => {
-            setUser(user);
-        });
-
-        return unsubscriber;
-    });
+    const { user, setUser } = useContext(UserContext);
 
     const signin = () => {
-        auth.signInWithGoogle()
+
+        auth.instance.signInWithGoogle()
             .then((res) => {
-                console.log(res);
+                setUser(res.user);
             }).catch((err) => {
                 console.log(err);
-            })
+            });
+
     }
 
     return (
@@ -38,18 +33,15 @@ export default function Header() {
             <Navbar.Content>
             {
                 user? (
-                    <Navbar.Link color="primary" href="/profile">
+                    <Navbar.Link color="primary" onPress={auth.instance.signOut} >
                         {user.displayName}
                     </Navbar.Link>    
                 ) : (
-                    <Button light onPress={() => signin()}>
+                    <Navbar.Link light onPress={() => signin()}>
                         Ingresar con Google
-                    </Button>
+                    </Navbar.Link>
                 )
             }
-                <Navbar.Link color="inherit" href="/config">
-                    Configuración
-                </Navbar.Link>
             </Navbar.Content>   
         </Navbar>
     )
