@@ -2,11 +2,8 @@ class http {
 
     static instance = new http();
 
-    baseURL = "http://localhost:5000/";
-
-    fetch = (url, options) => fetch(this.baseURL + url, {
+    fetch = (url, options) => fetch(url, {
         mode: 'no-cors',
-        method: "GET",
         ...options
     });
 

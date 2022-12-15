@@ -11,14 +11,7 @@ class Auth {
     static instance = new Auth();
     
     currentUser() {
-        let user = Storage.instance.getUser();
-
-        if (!user) {
-            user = getAuth().currentUser;
-            
-            Storage.instance.setUser(user);
-        }
-        return user;
+        return getAuth().currentUser;
     }
 
     async signInWithGoogle () {
@@ -48,9 +41,8 @@ class Auth {
 
     }
 
-    signOut() {
-        getAuth().signOut();
-        location.reload();
+    async signOut() {
+        return await getAuth().signOut();
     }
 }
 

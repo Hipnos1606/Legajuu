@@ -1,53 +1,36 @@
-import { Component } from 'react';
 import Head from 'next/head';
 import { Container } from "@nextui-org/react";
-import { UserProvider } from './context/userContext';
 import Header from './Header';
-import { LoadingScreen } from './UI';
-import auth from '../libs/auth';
 
-class Layout extends Component {
+function Layout (props) {
 
-    state = {
-        user: null,
-        loading: true,
-    }
+    const { 
+        headTitle,
+        children,
+        meta = {
+            name: "description",
+            content: "Legajuu es una aplicación dirigida a docentes hondureños que facilita la gestión de documentos y la creación de legajos para la secretaría de educación. La aplicación permite almacenar documentos PDF en la nube, crear y modificar legajos, convertir imágenes a PDF, unir archivos PDF, y descargar el legajo en un archivo comprimido. Es fácil de usar y segura.",
+        },
+        containerCss
+    } = props;
 
-    componentDidMount() {
-        auth.instance.authStateChange().then((user) => this.setState({loading: false, user,}));
-    }
+    const title = `Legajuu! | ${ headTitle }`;
 
-    render() {
-
-        const { 
-            headTitle,
-            children,
-            meta = {
-                name: "description",
-                content: "Crea tu Legajo de forma rápida y fácil",
-            },
-            containerCss
-        } = this.props;
-
-        const title = `Legajuu! | ${ headTitle }`;
-
-        return (
-            <UserProvider>
-                <Head>
-                    <title>{title}</title>
-                    <meta name={meta.name} content={meta.content} />
-                    <link rel="icon" href="/favicon.ico" />
-                </Head>
-                <Header />
-                    <LoadingScreen visible={this.state.loading} />
-                    <Container css={containerCss} fluid>
-                        <main>
-                            { children }
-                        </main>
-                    </Container>
-            </UserProvider>
-        )
-    }
+    return (
+        <>
+            <Head>
+                <title>{title}</title>
+                <meta name={meta.name} content={meta.content} />
+                <link rel="icon" href="/favicon.ico" />
+            </Head>
+            <Header />
+            <Container css={containerCss} fluid>
+                <main>
+                    { children }
+                </main>
+            </Container>
+        </>
+    )
 }
 
 export default Layout;

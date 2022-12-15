@@ -2,11 +2,32 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore, setDoc, doc, getDoc, getDocs, collection, query, where, deleteDoc } from 'firebase/firestore';
 import config from '../res/firebase/config';
 import auth from './auth';
+import Storage from './storage';
+import Directory from './directory';
 
 const app = initializeApp(config);
 const db = getFirestore(app);
 
 export default class Store {
+
+    static async getAllDocs() {
+        try {
+            if (auth.instance.currentUser()) {
+                const querySnapshot = await getDocs(collection(db, "users", auth.instance.currentUser().uid, "documents"));
+                var cloudDocuments = [];
+                querySnapshot.forEach(doc => {
+                    cloudDocuments = cloudDocuments.concat(doc.data());
+                });
+                const localDocuments = Storage.instance.getAllDocs();
+                return localDocuments.concat(cloudDocuments);
+            } else {
+                const localDocuments = Storage.instance.getAllDocs();
+                return localDocuments;
+            }
+        } catch(err) {
+            return new Error("Store getAllDocs error: " + err);
+        }
+    }
 
     static async saveDocument(docName, data) {
         try {
@@ -22,19 +43,29 @@ export default class Store {
         
     }
 
-    static async saveMultiple(directory) {
+    static async saveMultiple(documents) {
+        const handleSaveDocuments = documents.map(async () => {
+            await this.saveDocument(document.name, document);
+        });
+
+        await Promise.all(handleSaveDocuments);
+    }
+
+    static async saveDirectoryDocuments(directory) {
         try {
             
-            const allPromises = Promise.all(directory.documents.map(async (document) => {
+            const handleSaveDocuments = directory.documents.map(async (document) => {
+                
+                document.local && delete document.local;
 
                 await this.saveDocument(document.name, {
                     ...document,
                     directory: directory.name,
                 });
 
-            }));
+            });
 
-            await allPromises;
+            await Promise.all(handleSaveDocuments);
 
             return true;
 
@@ -48,14 +79,15 @@ export default class Store {
 
     static async saveDirectory(directory) {
         try {
+            if (directory.name.length) {
+                await setDoc(doc(db, 'users', auth.instance.currentUser().uid), {
+                    directories: {
+                        [directory.name]: true,
+                    },
+                }, { merge: true });
+            }
 
-            await setDoc(doc(db, 'users', auth.instance.currentUser().uid), {
-                directories: {
-                    [directory.name]: true,
-                },
-            }, { merge: true });
-
-            await this.saveMultiple(directory);
+            await this.saveDirectoryDocuments(directory);
 
             return true;
 
@@ -87,35 +119,42 @@ export default class Store {
     static async getDirectories() {
         try {
             
-            const docRef = doc(db, 'users', auth.instance.currentUser().uid);
-            
-            const docSnap = await getDoc(docRef);
+            if (auth.instance.currentUser()) {
+                const docRef = doc(db, 'users', auth.instance.currentUser().uid);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    var allDirectories = [];
+                    const cloudDirectories = Object.keys(docSnap.data().directories);
+                    const localDirectories = Storage.instance.getDirectories();
+                    const mergedDirectories = new Set([...cloudDirectories, ...localDirectories]);
+                    allDirectories = [...mergedDirectories];
+    
+                    const handleGetDocuments = allDirectories.map(async (directory) => {
+                        const directoryInstance = new Directory();
+                        directoryInstance.name = directory;
+                        const localDocuments = Storage.instance.getDocumentsFrom(directory); 
+                        const cloudDocuments = await this.getDocumentsFrom(directory);
+                        directoryInstance.documents = [...localDocuments, ...cloudDocuments];
+                        return directoryInstance;
+                    });
 
-            if (docSnap.exists()) {
-                let directories = docSnap.data().directories;
-
-                const allPromises = Promise.all(Object.keys(directories).map(async (directory) => {
-
+                    return Promise.all(handleGetDocuments);
+                }
+            } else {
+                let directories = Storage.instance.getDirectories();
+                directories = directories.map(directory => {
+                    const documents = Storage.instance.getDocumentsFrom(directory);
                     return ({
                         name: directory,
-                        documents: await this.getDocumentsFrom(directory),
+                        documents,
                     });
-                }));
-
-                directories = await allPromises;
-                
+                });
                 return directories;
-
-            } else {
-
-                console.error("documento no existe");
-
-                return [];
-
             }
         } catch(e) {
-
             console.error('store getDirectories error', e);
+            return [];
 
         }
     }
@@ -136,6 +175,20 @@ export default class Store {
 
             return false;
 
+        }
+    }
+
+    static async removeFromDirectory(document) {
+        document = {
+            ...document,
+            directory: "",
+        }
+        console.log('user', auth.instance.currentUser());
+        if (auth.instance.currentUser()) {
+            const docRef = doc(db, 'users', auth.instance.currentUser().uid, 'documents', document.name);
+            await setDoc(docRef, document);
+        } else {
+            Storage.instance.removeFromDirectory(document);
         }
     }
 }

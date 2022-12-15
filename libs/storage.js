@@ -1,57 +1,28 @@
-import { getLocalTimeZone } from "@internationalized/date";
+import Directory from './directory';
 
 class Storage {
 
     static instance = new Storage();
 
-    async setUser(user) {
-        try {
-
-            localStorage.setItem('legajuu-user', JSON.stringify(user));
-
-            return true;
-
-        } catch(err) {
-
-            console.error("Storage serUser error", err);
-
-            return false;
-        }
-    }
-
-    getUser() {
-
-        const storedUser = localStorage.getItem('legajuu-user');
-
-        return JSON.parse(storedUser);
-    }
-
     saveDocument(document) {
-        try {
+        const stringifiedDocument = JSON.stringify(document);
+        localStorage.setItem(`legajuu-document-${document.name}`, stringifiedDocument);
+    }
 
-            const stringifiedDocument = JSON.stringify(document);
-            
-            const documentkey = Date.now();
-
-            localStorage.setItem(`legajuu-document-${documentkey}`, stringifiedDocument);
-
-        } catch (err) {
-
-            console.error("Storage saveDocument error", err);
-
-        }
+    getDirectotyDocuments(directory) {
+        return this.getDirectories().find(storedDirectory => storedDirectory.name === `legajuu-document-${directory.name}`).documents
     }
 
     saveDirectory(directory) {
 
-        localStorage.setItem(`legajuu-directory-${Date.now()}`, JSON.stringify(directory.name));
+        localStorage.setItem(`legajuu-directory-${directory.name}`, JSON.stringify(directory.name));
 
         directory.documents.forEach((document) => {
 
             document = {
-                name: document.name,
-                url: document.url || URL.createObjectURL(document),
+                ...document,
                 directory: directory.name,
+                local: true,
             };
 
             this.saveDocument(document);
@@ -60,47 +31,28 @@ class Storage {
 
     }
 
-    getDirectories() {
-
-        const keys = Object.keys(localStorage);
-        
-        let directoriesKeys = keys.filter((key) => key.includes("legajuu-directory"));
+    getDocumentsFrom(directory) {
+        const keys = Object.keys(localStorage)
         const documentsKeys = keys.filter((key) => key.includes("legajuu-document"));
-
         const allDocuments = documentsKeys.map((documentKey) => this.getItem(documentKey));
+        const directoryDocuments = allDocuments.filter((document) =>  document.directory === directory);
+        return directoryDocuments;
+    }
 
+    getDirectories() {
+        const keys = Object.keys(localStorage);
+        let directoriesKeys = keys.filter((key) => key.includes("legajuu-directory"));
         let directories = directoriesKeys.map((directoryKey) => this.getItem(directoryKey));
-
-        directories = directories.map((directory) => {
-            
-            const directoryDocuments = allDocuments.filter((document) =>  document.directory === directory);
-
-            return {
-                directory: directory,
-                documents: directoryDocuments,
-            }
-        });
-
         return directories;
-
     }
 
     getItem(key) {
-
-        return JSON.parse(key);
-
+        return JSON.parse(localStorage.getItem(key));
     }
 
-    getAll() {
-
+    getAllDocs() {
         const keys = Object.keys(localStorage);
-
-        return keys.map((key) => {
-
-            return getItem(key);
-
-        });
-
+        return keys.filter((key) => key.includes("legajuu-document")).map(key => this.getItem(key));
     }
 
     removeDocument(document) {
@@ -118,6 +70,24 @@ class Storage {
             localStorage.removeItem(documentToDelete);
         }
 
+    }
+
+    removeFromDirectory(document) {
+        this.saveDocument(document);
+    }
+
+    saveMultiple(documents) {
+        documents.forEach((document) => {
+
+            document = {
+                ...document,
+                directory: "",
+                local: true,
+            };
+
+            this.saveDocument(document);
+
+        });
     }
 
 }

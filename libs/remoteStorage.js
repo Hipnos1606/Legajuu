@@ -1,4 +1,4 @@
-import { ref, getStorage, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, getStorage, uploadBytes, getDownloadURL, getBytes, deleteObject } from 'firebase/storage';
 
 export default class RemoteStorage {
 
@@ -80,6 +80,18 @@ export default class RemoteStorage {
 
             return false;
         }
+    }
+
+    async getDocumentBytes(document) {
+        return getBytes(this.documentRef(document));
+    }
+
+    async getMultiple(documentsNameList) {
+        const fetchDocuments = documentsNameList.map(async (document) => {
+            return await this.getDocumentBytes(document);
+        });
+
+        return await Promise.all(fetchDocuments);
     }
 
 }

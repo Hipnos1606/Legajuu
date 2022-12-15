@@ -1,18 +1,43 @@
 import { useContext } from 'react';
 import { UserContext } from './context/userContext';
-import { Navbar, Text, Link } from "@nextui-org/react";
+import { DirectoriesContext } from './context/directoriesContext';
+import { 
+    Navbar, 
+    Text, 
+    Link, 
+    Row, 
+    Button, 
+    User, 
+    Spacer, 
+    Badge,
+} from "@nextui-org/react";
 import auth from '../libs/auth';
 
 export default function Header() {
-    const { user, setUser } = useContext(UserContext);
+    const { user, setUser, setUserLoading } = useContext(UserContext);
+    const { handleGetDirectories } = useContext(DirectoriesContext);
+
+    const signOut = () => {
+        setUserLoading(true);
+        console.log("sign out");
+        auth.instance.signOut().finally(() => {
+            setUser(null);
+            setUserLoading(false);
+            handleGetDirectories();
+            console.log("sign out successfully");
+        });
+    }
 
     const signin = () => {
-
+        setUserLoading(true);
         auth.instance.signInWithGoogle()
             .then((res) => {
                 setUser(res.user);
             }).catch((err) => {
                 console.log(err);
+            }).finally(() => {
+                setUserLoading(false);
+                handleGetDirectories();
             });
 
     }
@@ -25,6 +50,10 @@ export default function Header() {
                         LEGAJUU!
                     </Text>
                 </Link>
+                <Spacer x={0.2} />
+                <Badge color="primary">
+                    BETA
+                </Badge>
             </Navbar.Brand>
             <Navbar.Content hideIn="xs" variant="underline">
                 <Navbar.Link href="/my_documents">Mis documentos</Navbar.Link>
@@ -32,14 +61,20 @@ export default function Header() {
             </Navbar.Content>
             <Navbar.Content>
             {
-                user? (
-                    <Navbar.Link color="primary" onPress={auth.instance.signOut} >
-                        {user.displayName}
-                    </Navbar.Link>    
+                user ? (
+                    <User
+                        size="sm"
+                        src={user.photoURL}
+                        name={user.displayName}
+                        zoomed
+                        pointer
+                        >
+                            <User.Link href={`javascript:${signOut}`} ></User.Link>
+                        </User>
                 ) : (
-                    <Navbar.Link light onPress={() => signin()}>
+                    <Button color="light" onPress={signin}>
                         Ingresar con Google
-                    </Navbar.Link>
+                    </Button>
                 )
             }
             </Navbar.Content>   
