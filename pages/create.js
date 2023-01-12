@@ -1,5 +1,6 @@
-import { useRef, useState, useContext, useEffect} from 'react';
+import { useRef, useState, useContext} from 'react';
 import { DirectoriesContext } from '../components/context/directoriesContext';
+import { UserContext } from '../components/context/userContext';
 import { Text, Col, Row, Input, Spacer, Button } from '@nextui-org/react';
 import Layout from '../components/Layout';
 import DocumentsList from '../components/DocumentsList';
@@ -11,20 +12,23 @@ import { saveAs } from 'file-saver';
 import { IoIosAlbums } from 'react-icons/io';
 import convertFiles from '../libs/util/convertFiles';
 
-
 export default function Create () {
 
-    const { directories, directoriesList, handleGetDirectories, loadingDirectories, setLoadingDirectories } = useContext(DirectoriesContext);
+    const { 
+        directories, 
+        directoriesList, 
+        handleSetState, 
+        handleSaveDirectory,
+        loadingDirectories, 
+        setLoadingDirectories 
+    } = useContext(DirectoriesContext);
+    const { user } = useContext(UserContext);
 
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     
     const [files, setFiles] = useState([]);
 
     let directoryNameRef = useRef();
-
-    useEffect(() => {
-        handleGetDirectories();
-    }, [handleGetDirectories]);
 
     const handleResetSelectedDocuments = () => {
         setSelectedDocuments([]);
@@ -49,24 +53,6 @@ export default function Create () {
         directoryNameRef.current.value = text;
     }
 
-    const handleSaveDirectory = () => {
-        setLoadingDirectories(true);
-        let directory = new Directory();
-        if (directoryNameRef.current.value.trim() === "") {
-            alert("Porfavor selecciona un directorio o crea uno nuevo");
-            return false;
-        }
-        directory.setName(directoryNameRef.current.value);
-        directory.setDocuments(files);
-        handleResetSelectedDocuments();
-        directory.save()
-            .finally(() => {
-                handleGetDirectories();
-            });
-
-        directory = null;
-    }
-
     const handleDownloadLegajo = async () => {
         const zip = new JSZip();
         const documentsBuffers = directories.map(async (directory, dirIndex) => {
@@ -88,7 +74,7 @@ export default function Create () {
         await Promise.all(documentsBuffers);
 
         const blob = await zip.generateAsync({ type:"blob" })
-        saveAs(blob, "Mi Legajuu!")
+        saveAs(blob, `Mi Legajuu! - ${user.displayName}`);
         
     }
 
@@ -96,7 +82,7 @@ export default function Create () {
 
         fromDirectory: (document) => {
             store.removeFromDirectory(document).finally(async () => {
-                handleGetDirectories();
+                handleSetState();
             });
             
         },
@@ -125,23 +111,52 @@ export default function Create () {
                         <Text h1>Crea tu Legajo</Text>
                     </Row>
                     <Row>
-                        <FilePicker accept="application/pdf" title={"Selecciona los documentos"} multiple onChange={handleGetFiles} />
+                        <FilePicker 
+                            accept="application/pdf" 
+                            title={"Selecciona los documentos"} 
+                            multiple 
+                            onChange={handleGetFiles} 
+                            />
                     </Row>
                     <Spacer y={2} />
                     <Row>
-                        <Dropdown title="Selecciona un directorio" items={directoriesList} onChange={handleSetDirectoryName} />
+                        <Dropdown 
+                            title="Selecciona un directorio" 
+                            items={directoriesList} 
+                            onChange={handleSetDirectoryName} 
+                            />
                         <Spacer x={1} />
-                        <Input labelPlaceholder="o crea uno nuevo" ref={directoryNameRef} />
+                        <Input 
+                            placeholder="o crea uno nuevo" 
+                            ref={directoryNameRef} 
+                            />
                         <Spacer x={1} />
                         {
                             selectedDocuments.length > 0 &&
-                                <Button color="success" onPress={handleSaveDirectory}>Guardar Directorio</Button>
+                                <Button 
+                                    color="success" 
+                                    onPress={() => handleSaveDirectory(files, directoryNameRef.current.value)
+                                        .then(() => {
+                                            directoryNameRef.current.value = "";
+                                            handleResetSelectedDocuments();
+                                        })
+                                    }
+                                    >
+                                    Guardar Directorio
+                                </Button>
                         }
                     </Row>
                     <DocumentsList documents={ selectedDocuments } defaultShowPreview deleteAction={deleteDoc.fromUpload} />
                     <Spacer y={2} />
                     {
-                        selectedDocuments.length > 0 && <Button color="success" disabled={ selectedDocuments.length < 1} onPress={handleSaveDirectory}>Guardar Directorio</Button>
+                        selectedDocuments.length > 0 && (
+                            <Button 
+                                color="success" 
+                                disabled={ selectedDocuments.length < 1} 
+                                onPress={handleSaveDirectory}>
+                                Guardar Directorio
+                            </Button>
+                            )
                     }
                     <Spacer y={2} />
                 </Col>
@@ -170,7 +185,7 @@ export default function Create () {
                                                     setLoadingDirectories(true);
                                                     directory.joinDirectory().finally(() => {
                                                         setLoadingDirectories(false);
-                                                        handleGetDirectories();
+                                                        handleSetState();
                                                     });
                                                 },
                                                 children:   <>

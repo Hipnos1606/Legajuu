@@ -55,7 +55,7 @@ const handleConvertFile = async (file) => {
             return convertedFile;
             
         } else {
-            resolve(file);
+            return file;
         }
     } catch (error) {
         throw error;

@@ -6,18 +6,26 @@ import { LoadingScreen } from '../UI';
 export const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
-
-    const [user, setUser] = useState(auth.instance.currentUser());
+    const [user, setUser] = useState(null);
     const [loading, setUserLoading] = useState(true);
-    const { handleGetAllDocuments, handleGetDirectories } = useContext(DirectoriesContext);
+    const { 
+        handleSetState,
+        setLoadingDirectories,
+    } = useContext(DirectoriesContext);
+
+    const init = (user) => {
+        setUser(user);
+        handleSetState();
+        setUserLoading(false);
+        setLoadingDirectories(false);
+    }
 
     useEffect(() => {
-        auth.instance.authStateChange().then((user) => {
-            setUser(user);
-            handleGetAllDocuments(user);
-            handleGetDirectories(user);
-        }).finally(() => setUserLoading(false));
-    }, [handleGetAllDocuments, handleGetDirectories]);
+        (async () => {
+            const user = await auth.instance.authStateChange();
+            init(user);
+        })()
+    }, []);
 
     return (
         <UserContext.Provider value={{

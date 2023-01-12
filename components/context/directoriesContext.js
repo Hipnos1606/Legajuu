@@ -1,6 +1,6 @@
 import React from 'react';
-import auth from '../../libs/auth';
 import store from '../../libs/store';
+import Directory from '../../libs/directory';
 
 export const DirectoriesContext = React.createContext();
 
@@ -25,19 +25,40 @@ export function DirectoriesProvider({ children }) {
         return [...mergedDirectoryList];
     }
 
+    
     const handleGetDirectories = async () => {
         setLoadingDirectories(true);
-        const directories = await store.getDirectories();
-        const directoriesList = getDirectoriesList(directories);
+        const cloudDirectories = await store.getDirectories();
+        const directoriesList = getDirectoriesList(cloudDirectories);
         setDirectoriesList(directoriesList);
-        const filteredDirectories = getFilteredDirectories(directories);
+        const filteredDirectories = getFilteredDirectories(cloudDirectories);
         setDirectories(filteredDirectories);
         setLoadingDirectories(false);
     }
-
+    
     const handleGetAllDocuments = async () => {
         const documents = await store.getAllDocs();
         setAllDocuments(documents);
+    }
+    
+    const handleSetState = async () => {
+        await handleGetDirectories();
+        await handleGetAllDocuments();
+        setLoadingDirectories(false);
+    }
+
+    const handleSaveDirectory = async (files, directoryName) => {
+        setLoadingDirectories(true);
+        let directory = new Directory();
+        if (directoryName.trim() === "") {
+            alert("Porfavor selecciona un directorio o crea uno nuevo");
+            return;
+        }
+        directory.setName(directoryName);
+        directory.setDocuments(files);
+        await directory.save()
+        handleSetState();
+        directory = null;
     }
     
     return (
@@ -45,10 +66,12 @@ export function DirectoriesProvider({ children }) {
             directories,
             directoriesList, 
             loadingDirectories,
-            setLoadingDirectories,
             allDocuments,
+            handleSetState,
+            setLoadingDirectories,
             handleGetAllDocuments,
             handleGetDirectories,
+            handleSaveDirectory,
         }}>
             { children }
         </DirectoriesContext.Provider>

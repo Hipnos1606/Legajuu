@@ -1,83 +1,101 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { UserContext } from './context/userContext';
 import { DirectoriesContext } from './context/directoriesContext';
 import { 
     Navbar, 
     Text, 
-    Link, 
-    Row, 
     Button, 
     User, 
     Spacer, 
     Badge,
 } from "@nextui-org/react";
+import { IoLogoGoogle, IoIosLogOut } from 'react-icons/io';
+import NextLink from 'next/link';
 import auth from '../libs/auth';
+import { Modal } from './UI';
+
+const Link = (props) => (
+    <NextLink href={props.href}>
+        <Text {...props.textProps} css={{ cursor: 'pointer' }}> {props.text} </Text>
+    </NextLink>
+    )
 
 export default function Header() {
     const { user, setUser, setUserLoading } = useContext(UserContext);
-    const { handleGetDirectories } = useContext(DirectoriesContext);
+    const { handleSetState  } = useContext(DirectoriesContext);
+    const [toggleModal, setToggleModal] = useState(false);
 
-    const signOut = () => {
-        setUserLoading(true);
-        console.log("sign out");
-        auth.instance.signOut().finally(() => {
-            setUser(null);
-            setUserLoading(false);
-            handleGetDirectories();
-            console.log("sign out successfully");
-        });
+    const handlerModal= () => {
+        setToggleModal(true);
     }
 
-    const signin = () => {
+    const signOut = async () => {
         setUserLoading(true);
-        auth.instance.signInWithGoogle()
-            .then((res) => {
-                setUser(res.user);
-            }).catch((err) => {
-                console.log(err);
-            }).finally(() => {
-                setUserLoading(false);
-                handleGetDirectories();
-            });
+        console.log("sign out");
+        await auth.instance.signOut()
+        setUser(null);
+        setUserLoading(false);
+        handleSetState();
+        setToggleModal(false);
+    }
 
+    const signin = async () => {
+        setUserLoading(true);
+        const response = await auth.instance.signInWithGoogle();
+        setUser(response.user);
+        handleSetState();
+        setUserLoading(false);
     }
 
     return (
+        <>
         <Navbar variant="sticky">
             <Navbar.Brand>
-                <Link href="/">
-                    <Text  b color="inherit" >
-                        LEGAJUU!
-                    </Text>
-                </Link>
+                <Link href="/" text="LEGAJUU!" textProps={{ b: true, color: 'inherit'}} />
                 <Spacer x={0.2} />
                 <Badge color="primary">
                     BETA
                 </Badge>
             </Navbar.Brand>
-            <Navbar.Content hideIn="xs" variant="underline">
-                <Navbar.Link href="/my_documents">Mis documentos</Navbar.Link>
-                <Navbar.Link href="/create">Crear mi Legajo</Navbar.Link>
+            <Navbar.Content variant="underline">
+                <Link href="/documents" text="Mis documentos" />
+                <Link href="/create" text="Crear mi Legajo" />
             </Navbar.Content>
-            <Navbar.Content>
+            <Navbar.Content hideIn="xs">
             {
                 user ? (
                     <User
                         size="sm"
                         src={user.photoURL}
                         name={user.displayName}
+                        onClick={handlerModal}
                         zoomed
-                        pointer
-                        >
-                            <User.Link href={`javascript:${signOut}`} ></User.Link>
-                        </User>
+                        pointer  
+                        />
                 ) : (
-                    <Button color="light" onPress={signin}>
+                    <Button 
+                        color="light" 
+                        icon={
+                            <IoLogoGoogle fill="currentColor" />
+                        } 
+                        onPress={signin}>
                         Ingresar con Google
                     </Button>
                 )
             }
             </Navbar.Content>   
         </Navbar>
+        <Modal isVisible={toggleModal} closeHandler={() => setToggleModal(false)}>
+            <Button 
+                color="default" 
+                onPress={signOut}
+                icon={
+                    <IoIosLogOut fill="currentColor" />
+                }
+                >
+                Cerrar sesión
+            </Button>
+        </Modal>
+        </>
     )
 }

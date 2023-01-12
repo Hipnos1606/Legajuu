@@ -4,19 +4,22 @@ import {
     GoogleAuthProvider,
     onAuthStateChanged,
 } from 'firebase/auth';
-import Storage from './storage';
 
 class Auth {
 
     static instance = new Auth();
     
     currentUser() {
-        return getAuth().currentUser;
+        const sessionUser = JSON.parse(window.sessionStorage.getItem('legajuu_user'));
+        const user = sessionUser ? sessionUser : getAuth().currentUser;
+        return user;
     }
 
     async signInWithGoogle () {
         try {
-            return await signInWithPopup(getAuth(), new GoogleAuthProvider());
+            const response = signInWithPopup(getAuth(), new GoogleAuthProvider());
+            window.sessionStorage.setItem('legajuu_user', JSON.stringify((await response).user));
+            return response;
         } catch (err) {
             throw new Error(err);
         }
@@ -42,6 +45,7 @@ class Auth {
     }
 
     async signOut() {
+        window.sessionStorage.clear();
         return await getAuth().signOut();
     }
 }

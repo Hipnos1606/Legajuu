@@ -1,15 +1,16 @@
 import { useState, useContext } from 'react';
 import { Text, Col, Row, Spacer, Grid, Button } from '@nextui-org/react';
-import Layout from '../components/Layout';
-import DocumentsList from '../components/DocumentsList';
-import { FilePicker } from '../components/UI';
-import { DirectoriesContext } from "../components/context/directoriesContext";
-import Directory from '../libs/directory';
+import Layout from '../../components/Layout';
+import DocumentsList from '../../components/DocumentsList';
+import { FilePicker } from '../../components/UI';
+import { DirectoriesContext } from "../../components/context/directoriesContext";
+import Directory from '../../libs/directory';
+import store from '../../libs/store';
 
 export default function MyDocuments () {
 
     const [ directory, setDirectory ] = useState(new Directory());
-    const { allDocuments, handleGetAllDocuments } = useContext(DirectoriesContext);
+    const { allDocuments, handleSetState } = useContext(DirectoriesContext);
 
     const handleGetFile = (event) => {
         const selectedDocuments = [...event.target.files];
@@ -21,7 +22,7 @@ export default function MyDocuments () {
     const handleSaveDocuments = () => {
         directory.save().finally(() => {
             setDirectory(new Directory());
-            handleGetAllDocuments();
+            handleSetState();
         });
     }
 
@@ -29,7 +30,7 @@ export default function MyDocuments () {
 
         fromStore: (document) => {
             store.deleteDoc(document).finally(async () => {
-                handleGetDirectories();
+                handleSetState();
             });
             
         },

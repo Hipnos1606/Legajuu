@@ -1,5 +1,3 @@
-import Directory from './directory';
-
 class Storage {
 
     static instance = new Storage();
@@ -73,6 +71,10 @@ class Storage {
     }
 
     removeFromDirectory(document) {
+        this.saveDocument(document);
+    }
+
+    moveToDirectory(document) {
         this.saveDocument(document);
     }
 

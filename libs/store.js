@@ -12,8 +12,10 @@ export default class Store {
 
     static async getAllDocs() {
         try {
-            if (auth.instance.currentUser()) {
-                const querySnapshot = await getDocs(collection(db, "users", auth.instance.currentUser().uid, "documents"));
+            const user = auth.instance.currentUser();
+
+            if (user) {
+                const querySnapshot = await getDocs(collection(db, "users", user.uid, "documents"));
                 var cloudDocuments = [];
                 querySnapshot.forEach(doc => {
                     cloudDocuments = cloudDocuments.concat(doc.data());
@@ -118,9 +120,9 @@ export default class Store {
 
     static async getDirectories() {
         try {
-            
-            if (auth.instance.currentUser()) {
-                const docRef = doc(db, 'users', auth.instance.currentUser().uid);
+            const user = auth.instance.currentUser();
+            if (user) {
+                const docRef = doc(db, 'users', user.uid);
                 const docSnap = await getDoc(docRef);
                 
                 if (docSnap.exists()) {
@@ -183,12 +185,26 @@ export default class Store {
             ...document,
             directory: "",
         }
-        console.log('user', auth.instance.currentUser());
+        
         if (auth.instance.currentUser()) {
             const docRef = doc(db, 'users', auth.instance.currentUser().uid, 'documents', document.name);
             await setDoc(docRef, document);
         } else {
             Storage.instance.removeFromDirectory(document);
+        }
+    }
+
+    static async moveToDirectory(document, directory) {
+        document = {
+            ...document,
+            directory: directory,
+        }
+        
+        if (auth.instance.currentUser()) {
+            const docRef = doc(db, 'users', auth.instance.currentUser().uid, 'documents', document.name);
+            await setDoc(docRef, document);
+        } else {
+            Storage.instance.moveToDirectory(document);
         }
     }
 }

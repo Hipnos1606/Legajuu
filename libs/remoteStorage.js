@@ -6,19 +6,11 @@ export default class RemoteStorage {
 
     documentRef = (document) => ref(getStorage(), `documents/${document.name}`)
 
-    getDocument(document) {
-
-        return this.documentRef(document);
-
-    }
-
     async uploadDocument(document) {
 
         try {
 
             return await uploadBytes(this.documentRef(document), document);
-
-            return true;
 
         } catch (err) {
 
@@ -92,6 +84,10 @@ export default class RemoteStorage {
         });
 
         return await Promise.all(fetchDocuments);
+    }
+
+    async getDocumentURL(document) {
+        return getDownloadURL(this.documentRef(document));
     }
 
 }

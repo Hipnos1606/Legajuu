@@ -1,0 +1,22 @@
+{
+    "feature1" : {
+        "title": "Guarda",
+        "description": "Guarda todos tus documentos",
+        "imageSrc": "gs://proyecto-docentes.appspot.com/features/docs upload.jpg"
+    },
+    "feature2" : {
+        "title": "Organiza",
+        "description": "Organiza todos tus documentos",
+        "imageSrc": "gs://proyecto-docentes.appspot.com/features/docs organization.jpg"
+    }, 
+    "feature3" : {
+        "title": "Crea",
+        "description": "Crea tu Legajo",
+        "imageSrc": "gs://proyecto-docentes.appspot.com/features/docs download.jpg"
+    },
+    "feature4" : {
+        "title": "Modifica",
+        "description": "Modifica tu Legajo",
+        "imageSrc" : "gs://proyecto-docentes.appspot.com/features/docs modification.jpg"
+    }
+}

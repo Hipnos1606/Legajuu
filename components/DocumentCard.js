@@ -1,22 +1,83 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Grid, Card, Col, Text, Button, Row, Badge } from '@nextui-org/react';
-import { IoIosArrowDown, IoIosArrowUp, IoIosTrash, IoIosClose } from 'react-icons/io';
+import { Modal, OptionsMenu } from './UI';
+import { IoIosArrowDown, IoIosArrowUp, IoIosMore, IoIosTrash, IoIosDocument, IoIosAdd } from 'react-icons/io';
 import DocumentView from './DocumentView';
+import Add2Legajo from './Add2Legajo';
+import Move2Directory from './Move2Directory';
+import store from '../libs/store';
+import { DirectoriesContext } from './context/directoriesContext';
 
 const DocumentCard = (props) => {
 
-    const { gridNum, document, deleteAction, defaultShowPreview, isLegajoList } = props;
-
-     const [showPreview, setShowPreview] = useState(defaultShowPreview);
-    
-    const togglePreview = () => {
-        setShowPreview(!showPreview);
+    const { document, deleteAction, defaultShowPreview, isLegajoList } = props;
+    const { handleSetState } = useContext(DirectoriesContext);
+    const [togglePreview, setTogglePreview] = useState(defaultShowPreview);
+    const [toggleModal, setToggleModal] = useState(false);
+    const [modalChildren, setModalChildren] = useState(null);
+    const [modalTitle, setModalTitle] = useState('Opciones del documento');
+        
+    const handleToggleModal = {
+        open: () => setToggleModal(true),
+        close: () => setToggleModal(false),
+        toggle: () => setToggleModal(!toggleModal),
     }
 
-    const toggleIcon = showPreview ?  <IoIosArrowUp size={32} /> : <IoIosArrowDown size={32} />;
+    const handleTogglePreview = {
+        open:  () => setTogglePreview(true),
+        close: () => setTogglePreview(false),
+        toggle: () => setTogglePreview(!togglePreview),
+    }
+    
+    const toggleIcon = togglePreview ?  <IoIosArrowUp size={32} /> : <IoIosArrowDown size={32} />;
+
+    const handleMoveDocument = async (directory) => {
+        await store.moveToDirectory(document, directory);
+        handleToggleModal.close();
+        handleSetState();
+    }
+
+    const showChangeDirectoryMenu = () => {
+        setModalTitle('Mover a');
+        handleToggleModal.open();
+        setModalChildren(<Move2Directory onPress={handleMoveDocument} />);
+    }
+
+    const menuOptions = [
+        {
+            text: 'Ver Documento',
+            icon: <IoIosDocument fill="currentColor" />,
+            onPress: () => {
+                window.open(document.url);
+                handleToggleModal.close();
+            },
+        },
+        (!isLegajoList && !document.directory) && {
+            text: 'Agregar al Legajo',
+            icon: <IoIosAdd fill="currentColor" />,
+            onPress: () => {
+                setModalChildren(<Add2Legajo document={document} />);
+            }
+        },
+        {
+            text: isLegajoList ? 'Quitar del Legajo' : 'Eliminar Documento',
+            icon: <IoIosTrash fill="currentColor" />,
+            onPress: () => {
+                deleteAction(document);
+                handleToggleModal.close();
+            },
+        }
+    ]
+    
+    const openMenuOptions = () => {
+        setModalTitle('Opciones del Documento');
+        handleToggleModal.open();
+        setModalChildren(<OptionsMenu options={menuOptions}/>);
+    }
+
 
     return (
-        <Grid xs={gridNum} key={JSON.stringify(document)}>
+        <Grid xs={12} md={4} lg={1} key={JSON.stringify(document)}>  
             <Card css={{ h: 'fit-content' }}>
                 <Card.Header css={{ bg: "#e6e8f1", w: "100%" }} >
                     <Grid.Container>
@@ -35,34 +96,49 @@ const DocumentCard = (props) => {
                                 {
                                     (document.directory?.length > 0)
                                         && 
-                                            <Row>
+                                            <Col>
                                                 <Text size={12}>
                                                     Añadido a <Text b >{ document.directory }</Text>
                                                 </Text>
-                                            </Row>
+                                                <Button size="xs" onPress={showChangeDirectoryMenu}>Cambiar Directorio</Button>
+                                            </Col>
                                 }
                             </Col>
                         </Grid>
                         <Grid xs={4} css={{ jc: 'flex-end' }}>
-                            <Button 
+                            <Button
                                 auto
-                                flat
-                                icon={isLegajoList ? <IoIosClose size={32} /> : <IoIosTrash size={32} />}
-                                onPress={() => deleteAction(document)}  
-                                />
+                                onPress={openMenuOptions}
+                                light
+                                icon={<IoIosMore fill='currenctColor' size={32}/>}
+                            >
+                            </Button>
                         </Grid>
                     </Grid.Container>
                 </Card.Header>
                 <Row>
                     {
-                        showPreview 
+                        togglePreview 
                             && <DocumentView src={document.url} />
                     }
                 </Row>
                 <Row>
-                    <Button auto light css={{ w: '100%'  }} color="primary" icon={toggleIcon} onPress={togglePreview}>{showPreview ? "Ocultar" : "Vista Previa"}</Button>
+                    <Button auto light css={{ w: '100%'  }} color="primary" icon={toggleIcon} onPress={handleTogglePreview.toggle}>{togglePreview ? "Ocultar" : "Vista Previa"}</Button>
                 </Row>
             </Card>
+            <Modal
+                modalTitle={modalTitle}
+                closeHandler={ handleToggleModal.close }
+                isVisible={ toggleModal }
+                >
+                {
+                    modalChildren 
+                    ?   modalChildren 
+                    :   <OptionsMenu 
+                            options={menuOptions}
+                        />    
+                }
+            </Modal>
         </Grid>
     )
 }

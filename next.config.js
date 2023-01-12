@@ -5,6 +5,7 @@ const nextConfig = {
     domains: [
       "https://lh3.googleusercontent.com", 
       "https://images.pexels.com",
+      "https://firebasestorage.googleapis.com",
     ],
   },
   swcMinify: true,
