@@ -20,6 +20,7 @@ const Link = (props) => (
     </NextLink>
     )
 
+    
 export default function Header() {
     const { user, setUser, setUserLoading } = useContext(UserContext);
     const { handleSetState  } = useContext(DirectoriesContext);
@@ -31,7 +32,6 @@ export default function Header() {
 
     const signOut = async () => {
         setUserLoading(true);
-        console.log("sign out");
         await auth.instance.signOut()
         setUser(null);
         setUserLoading(false);
@@ -57,18 +57,18 @@ export default function Header() {
                     BETA
                 </Badge>
             </Navbar.Brand>
-            <Navbar.Content variant="underline">
-                <Link href="/documents" text="Mis documentos" />
-                <Link href="/create" text="Crear mi Legajo" />
+            <Navbar.Content hideIn="xs" variant="underline">
+                <Link href="/documents" textProps={{ b: true }} text="Mis documentos" />
+                <Link href="/create" textProps={{ b: true }} text="Crear mi Legajo" />
             </Navbar.Content>
-            <Navbar.Content hideIn="xs">
+            <Navbar.Content>
             {
                 user ? (
                     <User
                         size="sm"
-                        src={user.photoURL}
-                        name={user.displayName}
-                        onClick={handlerModal}
+                        src={ user.photoURL }
+                        name={ user.displayName }
+                        onClick={ handlerModal }
                         zoomed
                         pointer  
                         />
@@ -86,6 +86,12 @@ export default function Header() {
             </Navbar.Content>   
         </Navbar>
         <Modal isVisible={toggleModal} closeHandler={() => setToggleModal(false)}>
+            <Button>
+                <Link textProps={{ b: true, color: 'white' }} href="/documents" text="Mis documentos" />
+            </Button>
+            <Button>
+                <Link textProps={{ b: true, color: 'white' }} href="/create" text="Crear mi Legajo" />
+            </Button>
             <Button 
                 color="default" 
                 onPress={signOut}

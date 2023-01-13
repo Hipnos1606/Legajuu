@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { Text, Col, Row, Spacer, Grid, Button } from '@nextui-org/react';
+import { Text, Col, Row, Spacer, Grid, Button, Container } from '@nextui-org/react';
 import Layout from '../../components/Layout';
 import DocumentsList from '../../components/DocumentsList';
 import { FilePicker } from '../../components/UI';
@@ -87,15 +87,21 @@ export default function MyDocuments () {
                                         </Row>)
                                 }
                 <Spacer y={1} />
-                <Row>
+                <Row css={{ jc: 'center', ai: 'center' }}>
                     {
-                        <DocumentsList 
+                        (allDocuments.length === 0) ?
+                        (
+                            <Text size={24} b color="gray">
+                                Aún no tienes documentos, sube tus documentos para poder verlos aquí...
+                            </Text>
+                        ) : (
+                            <DocumentsList 
                             defaultShowPreview={false} 
                             documents={allDocuments} 
                             isStoredDirectories 
                             deleteAction={handleDeleteDocument.fromStore}
-
                             />
+                        )
                     }
                 </Row>
         </Layout>

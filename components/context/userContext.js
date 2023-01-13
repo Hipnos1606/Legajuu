@@ -13,18 +13,19 @@ export const UserProvider = ({ children }) => {
         setLoadingDirectories,
     } = useContext(DirectoriesContext);
 
-    const init = (user) => {
-        setUser(user);
-        handleSetState();
-        setUserLoading(false);
-        setLoadingDirectories(false);
-    }
-
     useEffect(() => {
-        (async () => {
+
+        const init = (user) => {
+            setUser(user);
+            handleSetState();
+            setUserLoading(false);
+            setLoadingDirectories(false);
+        }
+
+        return ((async () => {
             const user = await auth.instance.authStateChange();
             init(user);
-        })()
+        })())
     }, []);
 
     return (

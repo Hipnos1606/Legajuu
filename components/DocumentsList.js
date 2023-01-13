@@ -16,8 +16,6 @@ export default function DocumentsList (props) {
      } = props;
     const { loadingDirectories, setLoadingDirectories } = useContext(DirectoriesContext);
 
-    console.log(documents);
-
     return (
         <Grid.Container gap={2}>
             {

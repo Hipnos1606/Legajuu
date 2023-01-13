@@ -4,7 +4,7 @@ import { UserContext } from '../components/context/userContext';
 import { Text, Col, Row, Input, Spacer, Button } from '@nextui-org/react';
 import Layout from '../components/Layout';
 import DocumentsList from '../components/DocumentsList';
-import { Dropdown, FilePicker } from '../components/UI';
+import { Dropdown, FilePicker, ListLoader } from '../components/UI';
 import Directory from '../libs/directory';
 import store from '../libs/store';
 import JSZip from "jszip";
@@ -19,12 +19,12 @@ export default function Create () {
         directoriesList, 
         handleSetState, 
         handleSaveDirectory,
-        loadingDirectories, 
         setLoadingDirectories 
     } = useContext(DirectoriesContext);
     const { user } = useContext(UserContext);
 
     const [selectedDocuments, setSelectedDocuments] = useState([]);
+    const [uploadingDocuments, setUploadingDocuments] = useState(false);
     
     const [files, setFiles] = useState([]);
 
@@ -113,7 +113,7 @@ export default function Create () {
                     <Row>
                         <FilePicker 
                             accept="application/pdf" 
-                            title={"Selecciona los documentos"} 
+                            title={"Sube los documentos"} 
                             multiple 
                             onChange={handleGetFiles} 
                             />
@@ -135,18 +135,31 @@ export default function Create () {
                             selectedDocuments.length > 0 &&
                                 <Button 
                                     color="success" 
-                                    onPress={() => handleSaveDirectory(files, directoryNameRef.current.value)
+                                    onPress={() => {
+                                        setUploadingDocuments(true);
+                                        handleSaveDirectory(files, directoryNameRef.current.value)
                                         .then(() => {
                                             directoryNameRef.current.value = "";
                                             handleResetSelectedDocuments();
+                                            setUploadingDocuments(false);
                                         })
-                                    }
+                                    }}
                                     >
                                     Guardar Directorio
                                 </Button>
                         }
                     </Row>
-                    <DocumentsList documents={ selectedDocuments } defaultShowPreview deleteAction={deleteDoc.fromUpload} />
+                    {
+                        uploadingDocuments ? <ListLoader /> :
+                        (
+                            <DocumentsList 
+                                isLegajoList
+                                documents={ selectedDocuments } 
+                                defaultShowPreview 
+                                deleteAction={deleteDoc.fromUpload} 
+                                />
+                        )
+                    }
                     <Spacer y={2} />
                     {
                         selectedDocuments.length > 0 && (
@@ -163,9 +176,6 @@ export default function Create () {
             </Row>
             <Row>
                 <Col>
-                    {   
-                        loadingDirectories && <Text b h2 >Cargando directorios...</Text>
-                    }
                     {
                         directories.map((directory) => {
                             return (
@@ -198,6 +208,13 @@ export default function Create () {
                                 </Row>
                             )
                         })
+                    }
+                    {
+                        directories.length < 1 && (
+                            <Text b size={24} color="gray">
+                                ¿Aún no has creado tu legajo? Sube un documento y selecciona o crea un directorio para empezar.
+                            </Text>
+                        )
                     }
                 </Col>
             </Row>

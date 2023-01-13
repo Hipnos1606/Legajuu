@@ -9,7 +9,7 @@ function Layout (props) {
         children,
         meta = {
             name: "description",
-            content: "Legajuu es una aplicación dirigida a docentes hondureños que facilita la gestión de documentos y la creación de legajos para la secretaría de educación. La aplicación permite almacenar documentos PDF en la nube, crear y modificar legajos, convertir imágenes a PDF, unir archivos PDF, y descargar el legajo en un archivo comprimido. Es fácil de usar y segura.",
+            content: "Crea tu Legajo de forma rápida y segura, guarda todos tus documentos en un sólo lugar y buscalos desde cualquier lugar.",
         },
         containerCss
     } = props;
