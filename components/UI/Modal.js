@@ -8,7 +8,6 @@ const Modal = (props) => {
     
     useEffect(() => {
         document.addEventListener('click', close);
-
         return document.removeEventListener('click', close);
     },[]);
 

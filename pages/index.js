@@ -22,7 +22,11 @@ export async function getStaticProps() {
 
 export default function Home({ features }) {
 
-  let gridSize = 3;
+  let gridSize = {
+    xs: 12,
+    md: 3,
+    lg: 3,
+  };
 
   return ( 
     <Layout 
@@ -30,7 +34,7 @@ export default function Home({ features }) {
       <Spacer y={2}/>
       <Container>
         <Grid.Container>
-          <Grid xs={6} css={{ display: "flex", flexDirection: "column" }}> 
+          <Grid xs={12} md={6} lg={6} css={{ display: "flex", flexDirection: "column" }}> 
           <Container>
               <Text h1>Organiza tu 
                 <NextLink href="/create" 
@@ -49,8 +53,9 @@ export default function Home({ features }) {
               </Button>
           </Container>
           </Grid>
-          <Grid xs={1} />
-          <Grid xs={5}>
+          <Grid />
+          <Spacer y={2} />
+          <Grid xs={12} md={5} lg={5}>
             <Card css={{ w: "100%", h: "fit-content" }}>
                   <Card.Header css={{ position: "absolute", zIndex: 1, top: 5 }}>
                     <Col>
@@ -74,11 +79,11 @@ export default function Home({ features }) {
         </Grid.Container>
       </Container>
       <Container>
-        <Grid.Container gap={1}>
+        <Grid.Container gap={1} >
             {
               features.map((feature) => {
                 return (
-                  <Grid xs={gridSize} key={JSON.stringify(feature)}>
+                  <Grid {...gridSize} key={JSON.stringify(feature)}>
                     <Card>
                       <Card.Header css={{ zIndex: 1, top: 5 }}>
                         <Col>
