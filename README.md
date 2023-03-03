@@ -1,3 +1,5 @@
+#🧧Legajuu is a Honduran teachers dedicated project that helps them to agilize the recruitment process, helping to make this process more esiest and complicate-less💢
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
