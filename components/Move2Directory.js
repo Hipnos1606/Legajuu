@@ -4,12 +4,14 @@ import { DirectoriesContext } from './context/directoriesContext';
 
 const Move2Directory = ({ onPress }) => {
 
-    const { directoriesList } = useContext(DirectoriesContext);
+    let { legajoDirectories } = useContext(DirectoriesContext);
+
+    legajoDirectories = legajoDirectories.map(dir => dir.name);
 
     return (
         <Col>
             {
-                directoriesList.map(directory => (
+                legajoDirectories.map(directory => (
                     <Button 
                         onPress={() => onPress(directory)}
                         light

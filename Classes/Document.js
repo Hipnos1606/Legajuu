@@ -1,60 +1,29 @@
-import ReadFile from './ReadFile';
-import { PDFDocument } from 'pdf-lib';
+import StoreMan from './StoreMan';
 
 export default class Document {
-    constructor(file) {
-        this.data = null;
-        this.name = file.name;
-        this.#init(file);
-        this.isLocal = true;
-        this.url = null;
+    constructor(data, directory, type, url) {
+        this.name = data.name;
+        this.directory = directory || "GENERAL";
+        this.url = data?.url || url;
+        this.type = type;
     }
-    
-    async #init(file) {
-        if (this.#isImage(file)) {
-            file = await convertToPDF(file);
+
+    getURL
+
+    get JSON() {
+        return {
+            name: this.name,
+            url: this.url,
+            directory: this.directory,
         }
-        file = await this.#getBuffer(file);
-        this.data = file;
     }
 
-    #verifyIsLocal(file) {
-        if (file.hasOwnProperty('url')) {
-            return false;
-        } 
-        return true;
+    delete() {
+        StoreMan.deleteDoc(this.name, this.type);
     }
 
-    async #getBuffer(file) {
-        const buffer = await ReadFile.getBuffer(file);
-        if (this.#isImage(file)) {
-            return buffer;
-        }
-        this.data = buffer;
-    }
-
-    #getURL(file) {
-        return ReadFile.getURL(file);
-    }
-
-    #isImage(file) {
-        const type = file.type;
-        return type.includes('image/');
-    }
-
-    async convertToPDF(image) {
-        let imageType = image.type.replace('image/', '');
-        let imageBuffer = await this.#getBuffer(image);
-        let PDFDoc = await PDFDocument.create();
-        let embed = {
-            jpg: PDFDoc.embedJpg,
-            png: PDFDoc.embedPng,
-        }
-
-        await embed[imageType](imageBuffer);
-        imageType = null;
-        imageBuffer = null;
-        return await PDFDoc.save();
+    removeFromLegajo() {
+        StoreMan.removeFromLegajo(this.name, this.type);
     }
 
 }

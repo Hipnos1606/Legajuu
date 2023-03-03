@@ -5,8 +5,14 @@ import { IoIosArrowDown, IoIosArrowUp, IoIosMore, IoIosTrash, IoIosDocument, IoI
 import DocumentView from './DocumentView';
 import Add2Legajo from './Add2Legajo';
 import Move2Directory from './Move2Directory';
-import store from '../libs/store';
+import Store from '../Classes/Store';
 import { DirectoriesContext } from './context/directoriesContext';
+
+const badgeColor = {
+    local: "primary",
+    cloud: "success",
+    selected: "warning",
+}
 
 const DocumentCard = (props) => {
 
@@ -32,9 +38,8 @@ const DocumentCard = (props) => {
     const toggleIcon = togglePreview ?  <IoIosArrowUp size={32} /> : <IoIosArrowDown size={32} />;
 
     const handleMoveDocument = async (directory) => {
-        await store.moveToDirectory(document, directory);
+        await Store.moveToDirectory(document, directory);
         handleToggleModal.close();
-        handleSetState();
     }
 
     const showChangeDirectoryMenu = () => {
@@ -63,7 +68,7 @@ const DocumentCard = (props) => {
             text: isLegajoList ? 'Quitar del Legajo' : 'Eliminar Documento',
             icon: <IoIosTrash fill="currentColor" />,
             onPress: () => {
-                deleteAction(document);
+                !isLegajoList ? document.remove() : document.removeFromLegajo()
                 handleToggleModal.close();
             },
         }
@@ -75,7 +80,6 @@ const DocumentCard = (props) => {
         setModalChildren(<OptionsMenu options={menuOptions}/>);
     }
 
-
     return (
         <Grid xs={12} md={4} lg={1} key={JSON.stringify(document)}>  
             <Card css={{ h: 'fit-content' }}>
@@ -84,7 +88,7 @@ const DocumentCard = (props) => {
                         <Grid xs={8}>
                             <Col>
                                 <Row>
-                                    <Badge size="xs" color={document.local ? "primary" : "success"} >{document.hasOwnProperty('local') ? "Local" : "En Nube"}</Badge>
+                                    <Badge size="xs" color={badgeColor[document.type]} >{document.type}</Badge>
                                 </Row>
                                 <Row>
                                     <Text size={12} css={{ 
@@ -97,9 +101,13 @@ const DocumentCard = (props) => {
                                     (document.directory?.length > 0)
                                         && 
                                             <Col>
-                                                <Text size={12}>
-                                                    Añadido a <Text b >{ document.directory }</Text>
-                                                </Text>
+                                                {
+                                                    !isLegajoList && (
+                                                        <Text size={12}>
+                                                            Añadido a <Text b >{ document.directory }</Text>
+                                                        </Text>
+                                                    )
+                                                }
                                                 <Button size="xs" onPress={showChangeDirectoryMenu}>Cambiar Directorio</Button>
                                             </Col>
                                 }

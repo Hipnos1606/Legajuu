@@ -1,54 +1,27 @@
 import { useState, useContext } from 'react';
-import { Text, Col, Row, Spacer, Grid, Button, Container } from '@nextui-org/react';
+import { Text, Col, Row, Spacer, Grid, Button } from '@nextui-org/react';
 import Layout from '../../components/Layout';
 import DocumentsList from '../../components/DocumentsList';
 import { FilePicker } from '../../components/UI';
 import { DirectoriesContext } from "../../components/context/directoriesContext";
-import Directory from '../../libs/directory';
-import store from '../../libs/store';
+import Directory from '../../Classes/Directory';
+import Document from '../../Classes/Document';
+import Store from '../../Classes/Store';
 
 export default function MyDocuments () {
+    const [ newDocuments, setNewDocuments ] = useState(new Directory("general", []));
+    const { generalDirectory } = useContext(DirectoriesContext);
 
-    const [ directory, setDirectory ] = useState(new Directory());
-    const { allDocuments, handleSetState } = useContext(DirectoriesContext);
-
-    const handleGetFile = (event) => {
-        const selectedDocuments = [...event.target.files];
-        const newDirectory = new Directory();
-        newDirectory.setDocuments(selectedDocuments);
-        setDirectory(newDirectory);
+    const handleGetFile = async (event) => {
+        const selectedDocuments = [...event.target.files].map((file) => {
+            return new Document(file);
+        });
+        
+        setNewDocuments(new Directory("general", selectedDocuments));
     }
 
     const handleSaveDocuments = () => {
-        directory.save().finally(() => {
-            setDirectory(new Directory());
-            handleSetState();
-        });
-    }
-
-    const handleDeleteDocument = {
-
-        fromStore: (document) => {
-            store.deleteDoc(document).finally(async () => {
-                handleSetState();
-            });
-            
-        },
-        
-        fromUpload: (documentToDelete) => {
-
-            const modifiedDocuments = directory.documents.filter((selectedDocument) => {
-                const documentToDelete = JSON.stringify(documentToDelete);
-                const actualUploadDoc = JSON.stringify(selectedDocument);
-                return documentToDelete !== actualUploadDoc;
-            });
-
-            const newDirectory = new Directory();
-            newDirectory.setDocuments(modifiedDocuments);
-
-            setDirectory(newDirectory);
-        },
-        
+        Store.save(newDocuments);
     }
 
     return (
@@ -61,11 +34,11 @@ export default function MyDocuments () {
                         <Row>
                             <Col>
                                 <Row>
-                                    <FilePicker accept="application/pdf" title={directory.documents.length ? "Elegir otros documento" : "Selecciona uno o varios documento"} multiple onChange={handleGetFile} />
+                                    <FilePicker accept="application/pdf" title={newDocuments.documents.length ? "Elegir otros documento" : "Selecciona uno o varios documento"} multiple onChange={handleGetFile} />
                                 </Row>
                                 <Spacer y={1} />
                                 {
-                                    directory.documents.length > 0 && (
+                                    newDocuments.documents.length > 0 && (
                                         <Row align='center' >
                                             <Button auto onPress={handleSaveDocuments} color="success" type='submit' >Guardar Documento</Button> 
                                         </Row>)
@@ -76,30 +49,29 @@ export default function MyDocuments () {
                 </Row>
                 <Grid.Container gap={2}>
                     {
-                        <DocumentsList defaultShowPreview={true} deleteAction={handleDeleteDocument.fromUpload} documents={directory.getFormattedDocuments()} />
+                        <DocumentsList defaultShowPreview={true} directory={newDocuments} />
                     }
                 </Grid.Container>
                 <Spacer y={1} />
                                 {
-                                    directory.documents.length > 0 && (
+                                    newDocuments.documents.length > 0 && (
                                         <Row align='center' >
-                                            <Button auto onPress={handleSaveDocuments} color="success" >Guardar Documento{ (directory.documents.length > 1) ? "s" : ""}</Button> 
+                                            <Button auto onPress={handleSaveDocuments} color="success" >Guardar Documento{ (newDocuments.length > 1) ? "s" : ""}</Button> 
                                         </Row>)
                                 }
                 <Spacer y={1} />
                 <Row css={{ jc: 'center', ai: 'center' }}>
                     {
-                        (allDocuments.length === 0) ?
+                        (generalDirectory.documents.length === 0) ?
                         (
                             <Text size={24} b color="gray">
                                 Aún no tienes documentos, sube tus documentos para poder verlos aquí...
                             </Text>
                         ) : (
                             <DocumentsList 
-                            defaultShowPreview={false} 
-                            documents={allDocuments} 
+                            defaultShowPreview={false}
+                            directory={generalDirectory} 
                             isStoredDirectories 
-                            deleteAction={handleDeleteDocument.fromStore}
                             />
                         )
                     }

@@ -1,35 +1,24 @@
-import { useContext } from 'react';
 import { Grid, Card } from '@nextui-org/react'
 import DocumentCard from './DocumentCard'
-import {DirectoriesContext} from './context/directoriesContext';
-import { ListLoader } from './UI';
 
 export default function DocumentsList (props) {
 
-    const { 
-        documents = [], 
-        deleteAction, 
+    const {
+        directory,
         utilityCard, 
-        isStoredDirectories, 
         defaultShowPreview, 
         isLegajoList,
      } = props;
-    const { loadingDirectories, setLoadingDirectories } = useContext(DirectoriesContext);
 
     return (
         <Grid.Container gap={2}>
             {
-                (isStoredDirectories)
-                    && (loadingDirectories)
-                        && <ListLoader />
-            }
-            {
-                documents.map((document) => {
+                directory.documents.map((document) => {
                     return <DocumentCard 
                                 isLegajoList={isLegajoList}
                                 key={Date.now() * Math.random()} 
                                 document={document}
-                                deleteAction={deleteAction}
+                                deleteAction={directory.removeDoc}
                                 defaultShowPreview={defaultShowPreview}
                             />
                 })
@@ -42,8 +31,7 @@ export default function DocumentsList (props) {
                                     isPressable 
                                     isHoverable
                                     onPress={() => {
-                                            setLoadingDirectories(true);
-                                            utilityCard.onPress().finally(() => setLoadingDirectories(false));
+                                            utilityCard.onPress();
                                         }}
                                     css={{ height: 100, alignItems: 'center', justifyContent: 'center' }}
                                     >

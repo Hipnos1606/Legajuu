@@ -1,9 +1,9 @@
 import Directory from "./Directory";
 
 export default class Bucket {
-    constructor(name, directories = [], files = []) {
+    constructor(name, directories = []) {
         this.name = name;
-        this.directories = directories.map(dir => new Directory(dir, files));
+        this.directories = directories;
         this.length = directories.length;
     }
 

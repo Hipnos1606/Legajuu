@@ -1,79 +1,32 @@
-import React from 'react';
-import store from '../../libs/store';
-import Directory from '../../libs/directory';
+import { useState, createContext } from 'react';
+import { UserProvider } from './userContext';
+import Directory from '../../Classes/Directory';
 
-export const DirectoriesContext = React.createContext();
+export const DirectoriesContext = createContext();
 
-const directoriesFixed = ["TÍTULOS", "DOCUMENTOS PERSONALES", "ANTECEDENTES PENALES", "ACUERDO DE NOMBRAMIENTO"];
+let fixedDirectories = ["TÍTULOS", "DOCUMENTOS PERSONALES", "ANTECEDENTES PENALES", "ACUERDO DE NOMBRAMIENTO"];
+fixedDirectories = fixedDirectories.map((dirName) => {
+    return new Directory(dirName, []);
+});
 
 export function DirectoriesProvider({ children }) {
 
-    const [directories, setDirectories] = React.useState([]);
-    const [allDocuments, setAllDocuments] = React.useState([]);
-    const [directoriesList, setDirectoriesList] = React.useState(directoriesFixed);
-    const [loadingDirectories, setLoadingDirectories] = React.useState(true);
-
-    const getFilteredDirectories = (directories) => {
-        return directories.filter((directory) => {
-            return (directory.documents.length > 0)
-        });
-    };
-
-    const getDirectoriesList = (directories) => {
-        const storedDirectories = directories.map(directory => directory.name);
-        const mergedDirectoryList = new Set([...storedDirectories, ...directoriesFixed]);
-        return [...mergedDirectoryList];
-    }
-
-    
-    const handleGetDirectories = async () => {
-        setLoadingDirectories(true);
-        const cloudDirectories = await store.getDirectories();
-        const directoriesList = getDirectoriesList(cloudDirectories);
-        setDirectoriesList(directoriesList);
-        const filteredDirectories = getFilteredDirectories(cloudDirectories);
-        setDirectories(filteredDirectories);
-        setLoadingDirectories(false);
-    }
-    
-    const handleGetAllDocuments = async () => {
-        const documents = await store.getAllDocs();
-        setAllDocuments(documents);
-    }
-    
-    const handleSetState = async () => {
-        await handleGetDirectories();
-        await handleGetAllDocuments();
-        setLoadingDirectories(false);
-    }
-
-    const handleSaveDirectory = async (files, directoryName) => {
-        setLoadingDirectories(true);
-        let directory = new Directory();
-        if (directoryName.trim() === "") {
-            alert("Porfavor selecciona un directorio o crea uno nuevo");
-            return;
-        }
-        directory.setName(directoryName);
-        directory.setDocuments(files);
-        await directory.save()
-        handleSetState();
-        directory = null;
-    }
+    const [legajoDirectories, setLegajoDirectories] = useState(fixedDirectories);
+    const [generalDirectory, setGeneralDirectory] = useState(new Directory("general", []));
+    const [loadingDirectories, setLoadingDirectories] = useState(true);
     
     return (
         <DirectoriesContext.Provider value={{
-            directories,
-            directoriesList, 
+            legajoDirectories,
+            generalDirectory,
             loadingDirectories,
-            allDocuments,
-            handleSetState,
+            setLegajoDirectories,
+            setGeneralDirectory,
             setLoadingDirectories,
-            handleGetAllDocuments,
-            handleGetDirectories,
-            handleSaveDirectory,
         }}>
-            { children }
+            <UserProvider>
+                { children }
+            </UserProvider>
         </DirectoriesContext.Provider>
     )
 }

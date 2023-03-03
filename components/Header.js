@@ -1,29 +1,29 @@
 import { useContext, useState } from 'react';
 import { UserContext } from './context/userContext';
-import { DirectoriesContext } from './context/directoriesContext';
+
 import { 
     Navbar, 
-    Text, 
     Button, 
     User, 
     Spacer, 
     Badge,
 } from "@nextui-org/react";
-import { IoLogoGoogle, IoIosLogOut } from 'react-icons/io';
-import NextLink from 'next/link';
-import auth from '../libs/auth';
-import { Modal } from './UI';
 
-const Link = (props) => (
-    <NextLink href={props.href}>
-        <Text {...props.textProps} css={{ cursor: 'pointer' }}> {props.text} </Text>
-    </NextLink>
-    )
+import { 
+    IoLogoGoogle, 
+    IoIosLogOut 
+} from 'react-icons/io';
+
+import { Modal } from './UI';
+import Auth from '../Classes/Auth';
+import Link from './UI/Link';
+import StoreMan from '../Classes/StoreMan';
+import { DirectoriesContext } from './context/directoriesContext';
 
     
 export default function Header() {
     const { user, setUser, setUserLoading } = useContext(UserContext);
-    const { handleSetState  } = useContext(DirectoriesContext);
+    const { setLegajoDirectories, setGeneralDirectory } = useContext(DirectoriesContext);
     const [toggleModal, setToggleModal] = useState(false);
 
     const handlerModal= () => {
@@ -31,19 +31,18 @@ export default function Header() {
     }
 
     const signOut = async () => {
-        setUserLoading(true);
-        await auth.instance.signOut()
+        await Auth.signOut()
         setUser(null);
-        setUserLoading(false);
-        handleSetState();
         setToggleModal(false);
     }
 
     const signin = async () => {
-        setUserLoading(true);
-        const response = await auth.instance.signInWithGoogle();
-        setUser(response.user);
-        handleSetState();
+        if (user) return false;
+        const session = await Auth.signIn();
+        const state = StoreMan.initialize();
+        setUser(session);
+        setLegajoDirectories(state.legajoDirectories);
+        setGeneralDirectory(state.generalDirectory);
         setUserLoading(false);
     }
 

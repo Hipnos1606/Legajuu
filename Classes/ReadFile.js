@@ -1,13 +1,8 @@
 
 export default class ReadFile {
 
-    static async getBuffer(file, isLocal = false) {
-        let url = null;
-        if (isLocal) {
-            url = this.getURL(file);
-        } else {
-            url = file.url;
-        }
+    static async getBuffer(file) {
+        let url = file?.url || URL.createObjectURL(file);
 
         const response = await fetch(url);
         const data = await response.arrayBuffer();
